@@ -1,5 +1,7 @@
+![1600919687190](..\..\image\struts执行原理-filter-interceptor.png)
+
 回顾Struts2的执行流程图？  
-请求->过滤器(web.xml)->拦截器(struts2)Action
+请求->过滤器(web.xml)->拦截器(struts2) Action
 
 
 #### Struts2动态方法调用

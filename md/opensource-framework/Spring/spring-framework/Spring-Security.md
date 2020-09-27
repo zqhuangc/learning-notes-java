@@ -1,6 +1,16 @@
 # [官方文档查阅](https://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/)
 
+## 引言
 
+认证
+
+授权/访问控制
+
+
+
+session 管理   HttpSesssionSecurityContextRepository
+
+InMemoryUserDetailsManager
 
 ## Java 硬编码方式
 
@@ -39,6 +49,19 @@ SecurityWebApplicationInitializer
 
 
 ### HttpSecurity
+
+```java
+public final class HttpSecurity extends
+		AbstractConfiguredSecurityBuilder<DefaultSecurityFilterChain, HttpSecurity>
+		implements SecurityBuilder<DefaultSecurityFilterChain>,
+		HttpSecurityBuilder<HttpSecurity> {...}
+```
+
+
+
+#### AbstractConfiguredSecurityBuilder<DefaultSecurityFilterChain, HttpSecurity>
+
+
 
 #### WebSecurityConfigurerAdapter
 
@@ -85,11 +108,15 @@ access="ROLE_USER"/>
 </global-method-security>
 ```
 
+
+
 #### Post Processing
 
 ### Custom DSLs
 
 AbstractHttpConfigurer<MyCustomDsl, HttpSecurity>
+
+
 
 ## Namespace（xml配置方式）
 
@@ -139,7 +166,7 @@ UserDetailsService(DAO)
 >
 > JdbcDaoImpl
 
-* SecurityContext 
+#### SecurityContext 
 
   * 持有身份验证和可能的特定于请求的安全性信息
 
@@ -162,22 +189,31 @@ UserDetailsService(DAO)
     >
     >
     > SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-* Authentication
+#### Authentication
   * 以Spring安全特定的方式表示主体
   * Spring Security使用一个`Authentication`对象来存储了当前与应用程序交互的主体的详细信息
   * UsernamePasswordAuthenticationToken
-* GrantedAuthority
+####  GrantedAuthority
 
   * 反映授予给主体的应用程序范围的权限
   * Authentication：GrantedAuthority   1：N
-* UserDetails
+#### UserDetails
 
   - 从您的应用程序的DAOs或其他安全数据来源提供必要的信息来构建 `Authentication object`
-* UserDetailsService
+
+username
+
+password
+
+authorities     ----  {ROLE_XXX, ROLE_XXX,...}
+
+####  UserDetailsService
 
   * 在传递基于字符串的用户名(或证书ID或类似的)时，loadUserByUsername 创建  UserDetails
 
 
+
+ 顺序
 
 UserDetailsService#loadUserByUsername(String)  --> UserDetails -->  Authentication  -->  SecurityContextHolder
 
@@ -215,7 +251,7 @@ UserDetailsService#loadUserByUsername(String)  --> UserDetails -->  Authenticati
 check multiple authentication databases
 
 * `ProviderManager`  namespace
-* `AuthenticationProvider`s 列表
+  * `AuthenticationProvider`s 列表
 
 认证来源 UserDetails UserDetailsService  --> DaoAuthenticationProvider
 
@@ -265,7 +301,28 @@ class="org.springframework.security.authentication.ProviderManager">
 * In-Memory Authentication
 * JdbcDaoImpl
 
->
+```java
+implements WebSecurityConfigurerAdapter:    
+    @Bean
+    @Override
+    protected UserDetailsService userDetailsService() {
+        //直接建两个用户存在内存中，生产环境可以从数据库中读取,对应管理器JdbcUserDetailsManager
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        // 创建两个用户
+        //通过密码的前缀区分编码方式,推荐,这种加密方式很好的利用了委托者模式，使得程序可以使用多种加密方式，并且会自动
+        //根据前缀找到对应的密码编译器处理。
+        manager.createUser(User.withUsername("guest").password("{bcrypt}" +
+                new BCryptPasswordEncoder().encode("123456")).roles("USER").build());
+        manager.createUser(User.withUsername("root").password("{sha256}" +
+                new StandardPasswordEncoder().encode("666666"))
+                .roles("ADMIN", "USER").build());
+        return manager;
+    }
+```
+
+
+
+
 
 ##### PasswordEncoder
 
@@ -315,11 +372,23 @@ FilterChainProxy
 
 Bypassing the Filter Chain
 
+### BasicAuthenticationFilter
+
 `BasicAuthenticationFilter`负责处理HTTP标头中显示的基本身份验证凭据
 
+###　AbstractAuthenticationProcessingFilter
 
 
-## Authorization
+
+
+
+#### UsernamePasswordAuthenticationFilter
+
+
+
+
+
+## Authorization（授权与访问控制）
 
 Authentication --> list GrantedAuthority --> GrantedAuthority#getAuthority()
 
@@ -339,6 +408,72 @@ boolean supports(ConfigAttribute attribute);
 boolean supports(Class clazz);
 ```
 
+* AccessDecisionManager 
+
+  * AbstractAccessDecisionManager#support
+
+    * 下面类只实现 decide
+
+    * AffirmativeBased#decide（只要有 voter 返回 deny）默认
+    * ConsensusBased#decide（deny 占大多数）
+    * UnanimousBased#decide（全部 deny）
+
+* AbstractAccessDecisionManager(support 方法 通用实现)
+
+```java
+public boolean supports(xxx) {
+		for (AccessDecisionVoter voter : this.decisionVoters) {
+			if (voter.supports(xxx)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+```
+
+* AffirmativeBased#decide
+
+```java
+/**
+authentication  token
+object FilterChain
+configAttributes  
+UrlMapping#configAttributes  
+UrlMapping#requestMatcher   antMatchers 
+*/
+public void decide(Authentication authentication, Object object,
+			Collection<ConfigAttribute> configAttributes) throws AccessDeniedException {
+    
+		int deny = 0;
+		for (AccessDecisionVoter voter : getDecisionVoters()) {
+			int result = voter.vote(authentication, object, configAttributes);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Voter: " + voter + ", returned: " + result);
+			}
+			switch (result) {
+			case AccessDecisionVoter.ACCESS_GRANTED:
+				return;
+			case AccessDecisionVoter.ACCESS_DENIED:
+				deny++;
+
+				break;
+
+			default:
+				break;
+			}
+		}
+		if (deny > 0) {
+			throw new AccessDeniedException(messages.getMessage(
+					"AbstractAccessDecisionManager.accessDenied", "Access is denied"));
+		}
+		// To get this far, every AccessDecisionVoter abstained
+		checkAllowIfAllAbstainDecisions();
+	}
+```
+
+
+
 
 
 - Authentication#getAuthorities()
@@ -347,7 +482,747 @@ MethodInvocation
 
 ![111.png](http://ww1.sinaimg.cn/large/006xzusPly1g8ev0vfwzfj30o90flwhn.jpg)
 
-#### AccessDecisionVoter
+### AccessDecisionVoter
+
+```java
+/**
+ * Indicates a class is responsible for voting on authorization decisions.
+ */
+public interface AccessDecisionVoter<S> {
+
+	int ACCESS_GRANTED = 1;
+	int ACCESS_ABSTAIN = 0;
+	int ACCESS_DENIED = -1;
+
+	/**
+	 * Indicates whether this {@code AccessDecisionVoter} is able to vote on the passed
+	 */
+	boolean supports(ConfigAttribute attribute);
+
+	/**
+	 * Indicates whether the {@code AccessDecisionVoter} implementation is able to provide
+	 */
+	boolean supports(Class<?> clazz);
+
+	/**
+	 * Indicates whether or not access is granted.
+	 */
+	int vote(Authentication authentication, S object,
+			Collection<ConfigAttribute> attributes);
+    /**
+    object是用户要访问的资源,
+    
+    ConfigAttribute则是访问object要满足的条件ConfigAttribute哪来的?                WebSecurityConfigurerAdapter#configure(HttpSecurity http) 配置
+    
+    通常payload是字符串，比如ROLE_ADMIN
+    */
+}
+
+```
+
+* RoleVoter
+
+```java
+private String rolePrefix = "ROLE_";
+public boolean supports(ConfigAttribute attribute) {
+		if ((attribute.getAttribute() != null)
+				&& attribute.getAttribute().startsWith(getRolePrefix())) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+public int vote(Authentication authentication, Object object,
+			Collection<ConfigAttribute> attributes) {
+		if (authentication == null) {
+			return ACCESS_DENIED;
+		}
+		int result = ACCESS_ABSTAIN;
+		Collection<? extends GrantedAuthority> authorities = extractAuthorities(authentication);
+
+		for (ConfigAttribute attribute : attributes) {
+			if (this.supports(attribute)) {
+				result = ACCESS_DENIED;
+
+				// Attempt to find a matching granted authority
+				for (GrantedAuthority authority : authorities) {
+					if (attribute.getAttribute().equals(authority.getAuthority())) {
+						return ACCESS_GRANTED;
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+
+```
+
+
+
+## Session 管理
+
+
+
+并发 session ：已经授权过的用户再次进行授权
+
+```java
+@Bean
+public HttpSessionEventPublisher httpSessoinEventPublisher() {
+    return new HttpSessionEventPublisher();
+}
+
+
+@Override
+public void configure(HttpSecurity http) throws Exception {
+    http.sessionManagement().maximumSessions(2);
+}
+
+server.servlet.session.timeout=10
+    
+    
+    
+@Configuration
+public class WebConfiguration implements WebApplicationInitializer {
+
+  @Override
+  public void onStartup(ServletContext servlet Context) throws ServletException {
+    servletContext.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.COOKIE));
+  }
+}
+固定Session攻击,每次登陆成功后新建
+session.invalidate();
+session = request.getSession(true);
+
+http.sessionManagement()
+// .invalidSessionUrl("http://localhost:8080/#/login")
+　　.invalidSessionStrategy(invalidSessionStrategy)//session无效处理策略
+　　.maximumSessions(1) //允许最大的session
+// .maxSessionsPreventsLogin(true) //只允许一个地点登录，再次登陆报错
+　　.expiredSessionStrategy(sessionInformationExpiredStrategy) //session过期处理策略，被顶号了
+;
+```
+
+session 存储策略配置，security 给我们提供了一个参数配置 session 存储策略类型 spring.session.store-type = REDIS，可配置类型由 org.springframework.boot.autoconfigure.session.StoreType 类决定。REDIS,MONGODB,JDBC,HAZELCAST,NONE
+
+ @EnableRedisHttpSession(maxInactiveIntervalInSeconds = 3600)。标识启用Redis 的session管理策略。
+
+# 源码分析
+
+* SecurityBuilder
+  - AbstractSecurityBuilder
+    - AbstractConfiguredSecurityBuilder
+      - AuthenticationManagerBuilder
+      - HttpSecurity
+      - WebSecurity
+
+AbstractConfiguredSecurityBuilder#build  -》SecurityConfigurer#configure(HttpSecurity)
+
+* SecurityConfigurer<O, B extends SecurityBuilder<O>>
+  - WebSecurityConfigurer
+    - WebSecurityConfigurerAdapter
+
+
+
+```java
+HttpSecurity{
+    public ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry authorizeRequests()
+			throws Exception {
+		ApplicationContext context = getContext();
+		return getOrApply(new ExpressionUrlAuthorizationConfigurer<>(context))
+				.getRegistry();
+	}
+}
+
+
+ExpressionUrlAuthorizationConfigurer#createMetadataSource
+
+
+AbstractConfigAttributeRequestMatcherRegistry:
+final LinkedHashMap<RequestMatcher, Collection<ConfigAttribute>> createRequestMap() {
+		if (unmappedMatchers != null) {
+			throw new IllegalStateException(
+					"An incomplete mapping was found for "
+							+ unmappedMatchers
+							+ ". Try completing it with something like requestUrls().<something>.hasRole('USER')");
+		}
+
+		LinkedHashMap<RequestMatcher, Collection<ConfigAttribute>> requestMap = new LinkedHashMap<>();
+		for (UrlMapping mapping : getUrlMappings()) {
+			RequestMatcher matcher = mapping.getRequestMatcher();
+			Collection<ConfigAttribute> configAttrs = mapping.getConfigAttrs();
+			// 访问控制时 vote 所需 configAttrs
+            requestMap.put(matcher, configAttrs);
+		}
+		return requestMap;
+	}
+```
+
+
+
+## Filter 机制
+
+Spring Security 通过 FilterChainProxy **作为单一的Filter** 注册到 web层，Proxy内部的Filter。
+
+>  ApplicationFilterChain#internalDoFilter  --> ApplicationFilterChain#doFilter --> FilterChainProxy#doFilter 
+>
+> web层 : client -> filter  ->  filter   -> FilterChainProxy   -> filter ->  servlet
+>
+> Spring Security FilterChainProxy  : filter  ->  filter -> filter
+
+FilterChainProxy相当于一个filter的容器，通过 VirtualFilterChain 来依次调用各个内部 filter
+
+```java
+    public void doFilter(ServletRequest request, ServletResponse response,
+            FilterChain chain) throws IOException, ServletException {
+        boolean clearContext = request.getAttribute(FILTER_APPLIED) == null;
+        if (clearContext) {
+            try {
+                request.setAttribute(FILTER_APPLIED, Boolean.TRUE);
+                doFilterInternal(request, response, chain);
+            }
+            finally {
+                SecurityContextHolder.clearContext();
+                request.removeAttribute(FILTER_APPLIED);
+           }
+        }
+        else {
+            doFilterInternal(request, response, chain);
+        }
+    }
+
+    private void doFilterInternal(ServletRequest request, ServletResponse response,
+            FilterChain chain) throws IOException, ServletException {
+    
+        FirewalledRequest fwRequest = firewall
+                .getFirewalledRequest((HttpServletRequest) request);
+        HttpServletResponse fwResponse = firewall
+                .getFirewalledResponse((HttpServletResponse) response);
+    
+        List<Filter> filters = getFilters(fwRequest);
+    
+        if (filters == null || filters.size() == 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(UrlUtils.buildRequestUrl(fwRequest)
+                        + (filters == null ? " has no matching filters"
+                                : " has an empty filter list"));
+            }
+    
+            fwRequest.reset();
+    
+            chain.doFilter(fwRequest, fwResponse);
+    
+            return;
+        }
+    
+        VirtualFilterChain vfc = new VirtualFilterChain(fwRequest, chain, filters);
+        vfc.doFilter(fwRequest, fwResponse);
+    }
+    
+    private static class VirtualFilterChain implements FilterChain {
+        private final FilterChain originalChain;
+        private final List<Filter> additionalFilters;
+        private final FirewalledRequest firewalledRequest;
+        private final int size;
+        private int currentPosition = 0;
+    
+        private VirtualFilterChain(FirewalledRequest firewalledRequest,
+                FilterChain chain, List<Filter> additionalFilters) {
+            this.originalChain = chain;
+            this.additionalFilters = additionalFilters;
+            this.size = additionalFilters.size();
+            this.firewalledRequest = firewalledRequest;
+        }
+    
+        public void doFilter(ServletRequest request, ServletResponse response)
+                throws IOException, ServletException {
+            if (currentPosition == size) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(UrlUtils.buildRequestUrl(firewalledRequest)
+                            + " reached end of additional filter chain; proceeding with original chain");
+                }
+    
+                // Deactivate path stripping as we exit the security filter chain
+                this.firewalledRequest.reset();
+    
+                originalChain.doFilter(request, response);
+            }
+            else {
+                currentPosition++;
+    
+                Filter nextFilter = additionalFilters.get(currentPosition - 1);
+    
+                if (logger.isDebugEnabled()) {
+                    logger.debug(UrlUtils.buildRequestUrl(firewalledRequest)
+                            + " at position " + currentPosition + " of " + size
+                            + " in additional filter chain; firing Filter: '"
+                            + nextFilter.getClass().getSimpleName() + "'");
+                }
+    
+                nextFilter.doFilter(request, response, this);
+            }
+        }
+    }
+
+```
+
+
+
+### Spring Security 内置  Filter 的默认order
+
+```java
+HttpSecurity{
+    private List<Filter> filters = new ArrayList<>();
+    private FilterComparator comparator = new FilterComparator();
+}
+
+AbstractConfiguredSecurityBuilder#build() 时 执行  filters.sort
+
+FilterComparator() {
+		Step order = new Step(INITIAL_ORDER, ORDER_STEP);
+		put(ChannelProcessingFilter.class, order.next());
+		put(ConcurrentSessionFilter.class, order.next());
+		put(WebAsyncManagerIntegrationFilter.class, order.next());
+		put(SecurityContextPersistenceFilter.class, order.next());
+		put(HeaderWriterFilter.class, order.next());
+		put(CorsFilter.class, order.next());
+		put(CsrfFilter.class, order.next());
+		put(LogoutFilter.class, order.next());
+		filterToOrder.put(
+			"org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter",
+				order.next());
+		filterToOrder.put(
+				"org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationRequestFilter",
+				order.next());
+		put(X509AuthenticationFilter.class, order.next());
+		put(AbstractPreAuthenticatedProcessingFilter.class, order.next());
+		filterToOrder.put("org.springframework.security.cas.web.CasAuthenticationFilter",
+				order.next());
+		filterToOrder.put(
+			"org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter",
+				order.next());
+		filterToOrder.put(
+				"org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter",
+				order.next());
+		put(UsernamePasswordAuthenticationFilter.class, order.next());
+		put(ConcurrentSessionFilter.class, order.next());
+		filterToOrder.put(
+				"org.springframework.security.openid.OpenIDAuthenticationFilter", order.next());
+		put(DefaultLoginPageGeneratingFilter.class, order.next());
+		put(DefaultLogoutPageGeneratingFilter.class, order.next());
+		put(ConcurrentSessionFilter.class, order.next());
+		put(DigestAuthenticationFilter.class, order.next());
+		filterToOrder.put(
+				"org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationFilter", order.next());
+		put(BasicAuthenticationFilter.class, order.next());
+		put(RequestCacheAwareFilter.class, order.next());
+		put(SecurityContextHolderAwareRequestFilter.class, order.next());
+		put(JaasApiIntegrationFilter.class, order.next());
+		put(RememberMeAuthenticationFilter.class, order.next());
+		put(AnonymousAuthenticationFilter.class, order.next());
+		filterToOrder.put(
+			"org.springframework.security.oauth2.client.web.OAuth2AuthorizationCodeGrantFilter",
+				order.next());
+		put(SessionManagementFilter.class, order.next());
+		put(ExceptionTranslationFilter.class, order.next());
+		put(FilterSecurityInterceptor.class, order.next());
+		put(SwitchUserFilter.class, order.next());
+	}
+
+
+```
+
+
+
+
+
+
+
+SecurityContextPersistenceFilter
+
+
+
+##  Spring Security 认证调用流程
+
+![undefined](http://ww1.sinaimg.cn/large/006xzusPly1g8exaoa9suj30yg0vg752.jpg)
+
+- OncePerRequestFilter#doFilterInternal  
+
+  - ...#doFilter
+
+  - DelegatingFilterProxy#invokeDelegate
+    - FilterChainProxy$VirtualFilterChain#doFilter（spring security 的 filter）
+      * AbstractAuthenticationProcessingFilter#dofilter（模板方法）
+        * UsernamePasswordAuthenticationFilter#attemptAuthenticate
+
+
+
+* （interface）AuthenticationManager#authenticate(authentication)
+
+  * ProviderManager#authenticate
+
+    * AuthenticationProvider#authenticate
+
+    * AbstractUserDetailsAuthenticationProvider#authenticate(authentication)
+
+      只支持 UsernamePasswordAuthenticationToken
+
+      * AbstractUserDetailsAuthenticationProvider#retrieveUser(username,
+        ​      (UsernamePasswordAuthenticationToken) authentication)
+
+        * DaoAuthenticationProvider#retrieveUser
+
+          ```java
+          this.getUserDetailsService().loadUserByUsername(username);
+          // UserDetailsService什么时候 设置的
+          
+          自定义认证，使用 DaoAuthenticationProvider，只需要为其提供 PasswordEncoder 和 UserDetailsService
+          
+          AuthenticationManagerBuilder 定制 Authentication Managers
+          ```
+
+          * UserDetailsService#loadUserByUsername
+
+      *  AbstractUserDetailsAuthenticationProvider#preAuthenticationChecks.check(user);
+
+        // 预先检查，DefaultPreAuthenticationChecks，检查用户是否被lock或者账号是否可用
+
+      * AbstractUserDetailsAuthenticationProvider#additionalAuthenticationChecks(user,
+        ​                    (UsernamePasswordAuthenticationToken) authentication);  
+
+         // 抽象方法，自定义检验
+
+      * AbstractUserDetailsAuthenticationProvider#createSuccessAuthentication(user/username, authentication, (UserDetails) user)
+
+        ```java
+        protected Authentication createSuccessAuthentication(Object principal,
+        			Authentication authentication, UserDetails user) {
+        		// Ensure we return the original credentials the user supplied,
+        		// so subsequent attempts are successful even with encoded passwords.
+        		// Also ensure we return the original getDetails(), so that future
+        		// authentication events after cache expiry contain the details
+        		UsernamePasswordAuthenticationToken result = new UsernamePasswordAuthenticationToken(
+        				principal, authentication.getCredentials(),
+        				authoritiesMapper.mapAuthorities(user.getAuthorities()));
+        		result.setDetails(authentication.getDetails());
+        
+        		return result;
+        	}
+        ```
+
+
+WebSecurityConfigurerAdapter#init
+
+WebSecurityConfigurerAdapter#getHttp
+
+WebSecurityConfigurerAdapter#authenticationManager
+
+WebSecurityConfigurerAdapter（实现类）#configure(AuthenticationManagerBuilder)
+
+通过 AuthenticationManagerBuilder#userDetailsService（自定义 UserDetailsService 设置的时机）
+
+new DaoAuthenticationConfigurer<>(userDetailsService)  通过构造函数设置的
+
+```
+public <T extends UserDetailsService> DaoAuthenticationConfigurer<AuthenticationManagerBuilder, T> userDetailsService(
+			T userDetailsService) throws Exception {
+		this.defaultUserDetailsService = userDetailsService;
+		return apply(new DaoAuthenticationConfigurer<>(
+				userDetailsService));
+	}
+```
+
+
+
+## Spring Security 授权与访问控制
+
+AccessDecisionManager
+
+### 执行流程
+
+FilterSecurityInterceptor#doFilter
+
+**FilterSecurityInterceptor#invoke** 
+
+**AbstractSecurityInterceptor#beforeInvocation**  (提取 ConfigAttribute)
+
+AccessDecisionManager#decide
+
+AccessDecisionVoter#vote
+
+RoleVoter#vote( authority（ROLE）与 ConfigAttribute  match )
+
+
+
+
+
+### 数据构建  configAttributes
+
+```java
+implement WebSecurityConfigurerAdapter:
+{
+    /**
+     * 授权信息配置
+     * @param http
+     * @throws Exception
+     */
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.cors().and()
+            // 禁用 CSRF
+            .csrf().disable()
+            // ExpressionUrlAuthorizationConfigurer$ExpressionInterceptUrlRegistry
+            .authorizeRequests()
+            .antMatchers(HttpMethod.POST, "/auth/login").permitAll()
+            // 指定路径下的资源需要验证了的用户才能访问
+            .antMatchers("/api/**").authenticated()
+            .antMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+            // 其他都放行了
+            .anyRequest().permitAll()
+            .and()
+            //添加自定义Filter
+            .addFilter(new JwtAuthenticationFilter(authenticationManager()))
+            .addFilter(new JwtAuthorizationFilter(authenticationManager()))
+            // 不需要session（不创建会话）
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+            // 授权异常处理
+            .exceptionHandling()
+            .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+            .accessDeniedHandler(new JwtAccessDeniedHandler());
+
+    }
+}
+```
+
+
+
+* AbstractRequestMatcherRegistry
+  - AbstractConfigAttributeRequestMatcherRegistry
+    - AbstractInterceptUrlConfigurer$AbstractInterceptUrlRegistry
+      -  ExpressionUrlAuthorizationConfigurer$ExpressionInterceptUrlRegistry
+
+
+
+antMatchers --> requestMatcher
+
+ExpressionUrlAuthorizationConfigurer$AuthorizedUrl#xxx
+
+ExpressionUrlAuthorizationConfigurer$AuthorizedUrl#access -->    
+
+ExpressionUrlAuthorizationConfigurer$interceptUrl  --> 
+
+AbstractConfigAttributeRequestMatcherRegistry$UrlMapping(requestMatcher, SecurityConfig.createList(attribute))
+
+
+```java
+public final class ExpressionUrlAuthorizationConfigurer<H extends HttpSecurityBuilder<H>>
+		extends
+		AbstractInterceptUrlConfigurer<ExpressionUrlAuthorizationConfigurer<H>, H> {
+	static final String permitAll = "permitAll";
+	private static final String denyAll = "denyAll";
+	private static final String anonymous = "anonymous";
+	private static final String authenticated = "authenticated";
+	private static final String fullyAuthenticated = "fullyAuthenticated";
+	private static final String rememberMe = "rememberMe";
+
+	private final ExpressionInterceptUrlRegistry REGISTRY;
+
+	private SecurityExpressionHandler<FilterInvocation> expressionHandler;
+	
+	/**
+	 * Creates a new instance
+	 * @see HttpSecurity#authorizeRequests()
+	 */
+	public ExpressionUrlAuthorizationConfigurer(ApplicationContext context) {
+		this.REGISTRY = new ExpressionInterceptUrlRegistry(context);
+	}
+    
+     /**
+      *
+      */
+     public ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry authorizeRequests()
+			throws Exception {
+		ApplicationContext context = getContext();
+		return getOrApply(new ExpressionUrlAuthorizationConfigurer<>(context))
+				.getRegistry();
+	}
+	
+	/**
+	 * Allows registering multiple {@link RequestMatcher} instances to a collection of {@link ConfigAttribute} instances
+	 */
+	private void interceptUrl(Iterable<? extends RequestMatcher> requestMatchers,
+			Collection<ConfigAttribute> configAttributes) {
+		for (RequestMatcher requestMatcher : requestMatchers) {
+			REGISTRY.addMapping(new AbstractConfigAttributeRequestMatcherRegistry.UrlMapping(
+					requestMatcher, configAttributes));
+		}
+	}
+	
+	/**
+	 * 内部类
+	 */
+	public class ExpressionInterceptUrlRegistry
+			extends
+			ExpressionUrlAuthorizationConfigurer<H>.AbstractInterceptUrlRegistry<ExpressionInterceptUrlRegistry, AuthorizedUrl> {
+
+		/**
+		 * @param context
+		 */
+		private ExpressionInterceptUrlRegistry(ApplicationContext context) {
+			setApplicationContext(context);
+		}
+		...
+  
+ AbstractRequestMatcherRegistry<C> {
+    public C antMatchers(HttpMethod method, String... antPatterns) {
+		Assert.state(!this.anyRequestConfigured, "Can't configure antMatchers after anyRequest");
+		return chainRequestMatchers(RequestMatchers.antMatchers(method, antPatterns));
+	}
+}}
+	
+```
+
+
+* ExpressionUrlAuthorizationConfigurer$AuthorizedUrl
+
+```java
+public class AuthorizedUrl {
+		private List<? extends RequestMatcher> requestMatchers;
+		private boolean not;
+
+		/**
+		 * Creates a new instance
+		 *
+		 * @param requestMatchers the {@link RequestMatcher} instances to map
+		 */
+		private AuthorizedUrl(List<? extends RequestMatcher> requestMatchers) {
+			this.requestMatchers = requestMatchers;
+		}
+       
+        /**
+		 * Allows specifying that URLs are secured by an arbitrary expression
+		 *
+		 * @param attribute the expression to secure the URLs (i.e.
+		 * "hasRole('ROLE_USER') and hasRole('ROLE_SUPER')")
+		 * @return the {@link ExpressionUrlAuthorizationConfigurer} for further
+		 * customization
+		 */
+		public ExpressionInterceptUrlRegistry access(String attribute) {
+			if (not) {
+				attribute = "!" + attribute;
+			}
+			interceptUrl(requestMatchers, SecurityConfig.createList(attribute));
+			return ExpressionUrlAuthorizationConfigurer.this.REGISTRY;
+		}
+
+		/**
+		 * Negates the following expression.
+		 */
+		public AuthorizedUrl not() {
+			this.not = true;
+			return this;
+		}
+
+		/**
+		 * Shortcut for specifying URLs require a particular role. If you do not want to
+		 * have "ROLE_" automatically inserted see {@link #hasAuthority(String)}.
+		 */
+		public ExpressionInterceptUrlRegistry hasRole(String role) {
+			return access(ExpressionUrlAuthorizationConfigurer.hasRole(role));
+		}
+
+		/**
+		 * Shortcut for specifying URLs require any of a number of roles. If you do not want to have "ROLE_" automatically inserted see
+		 */
+		public ExpressionInterceptUrlRegistry hasAnyRole(String... roles) {
+			return access(ExpressionUrlAuthorizationConfigurer.hasAnyRole(roles));
+		}
+
+		/**
+		 * Specify that URLs require a particular authority.
+		 */
+		public ExpressionInterceptUrlRegistry hasAuthority(String authority) {
+			return access(ExpressionUrlAuthorizationConfigurer.hasAuthority(authority));
+		}
+
+		/**
+		 * Specify that URLs requires any of a number authorities.
+		 */
+		public ExpressionInterceptUrlRegistry hasAnyAuthority(String... authorities) {
+			return access(ExpressionUrlAuthorizationConfigurer
+					.hasAnyAuthority(authorities));
+		}
+
+		/**
+		 * Specify that URLs requires a specific IP Address or <a href=
+		 * "https://forum.spring.io/showthread.php?102783-How-to-use-hasIpAddress&p=343971#post343971"
+		 * >subnet</a>.
+		 */
+		public ExpressionInterceptUrlRegistry hasIpAddress(String ipaddressExpression) {
+			return access(ExpressionUrlAuthorizationConfigurer
+					.hasIpAddress(ipaddressExpression));
+		}
+
+		/**
+		 * Specify that URLs are allowed by anyone.
+		 * @return the {@link ExpressionUrlAuthorizationConfigurer} for further
+		 * customization
+		 */
+		public ExpressionInterceptUrlRegistry permitAll() {
+			return access(permitAll);
+		}
+
+		/**
+		 * Specify that URLs are allowed by anonymous users.
+		 */
+		public ExpressionInterceptUrlRegistry anonymous() {
+			return access(anonymous);
+		}
+
+		/**
+		 * Specify that URLs are allowed by users that have been remembered.
+		 */
+		public ExpressionInterceptUrlRegistry rememberMe() {
+			return access(rememberMe);
+		}
+
+		/**
+		 * Specify that URLs are not allowed by anyone.
+		 */
+		public ExpressionInterceptUrlRegistry denyAll() {
+			return access(denyAll);
+		}
+
+		/**
+		 * Specify that URLs are allowed by any authenticated user.
+		 */
+		public ExpressionInterceptUrlRegistry authenticated() {
+			return access(authenticated);
+		}
+
+		/**
+		 * Specify that URLs are allowed by users who have authenticated and were not "remembered".
+		 */
+		public ExpressionInterceptUrlRegistry fullyAuthenticated() {
+			return access(fullyAuthenticated);
+		}
+	}
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Example
 
@@ -367,17 +1242,29 @@ https://www.jianshu.com/p/4468a2fff879
 
 
 
-![undefined](http://ww1.sinaimg.cn/large/006xzusPly1g8exaoa9suj30yg0vg752.jpg)
-
 ## [Spring Security with JWT](https://github.com/Snailclimb/spring-security-jwt-guide)
 
 > Authorization: Bearer <token string>
 
-### UsernamePasswordAuthenticationFilter
+### AbstractAuthenticationProcessingFilter
+
+ApplicationFilterChain
+
+
+
+模板方法：AbstractAuthenticationProcessingFilter#doFilter
+
+基于浏览器的HTTP认证请求的抽象处理器
+
+* 需要 注入AuthenticationManager 来处理  实现类提供的令牌（token）
+
+* attemptAuthentication(HttpServletRequest,HttpServletResponse)
+
+#### UsernamePasswordAuthenticationFilter
 
 the UsernamePasswordAuthenticationFilter which is created by the <form-login> element,
 
-AbstractAuthenticationProcessingFilter
+
 
 ```java
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
@@ -461,6 +1348,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
 
 ### BasicAuthenticationFilter
+
+> Processes a HTTP request's BASIC authorization headers, putting the result into the SecurityContextHolder
 
 ```java
 /**
@@ -555,9 +1444,176 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
 
 
+### ExceptionTranslationFilter(相关异常处理委派)
+
+#### AccessDeniedHandler
+
+##### AccessDeniedException
+
+```java
+用于处理通过认证的用户访问无权限资源时响应异常
+/**
+ * Used by {@link ExceptionTranslationFilter} to handle an
+ * <code>AccessDeniedException</code>.
+ *
+ * @author Ben Alex
+ */
+public interface AccessDeniedHandler {
+	// ~ Methods
+	// ========================================================================================================
+
+	/**
+	 * Handles an access denied failure.
+	 *
+	 * @param request that resulted in an <code>AccessDeniedException</code>
+	 * @param response so that the user agent can be advised of the failure
+	 * @param accessDeniedException that caused the invocation
+	 *
+	 * @throws IOException in the event of an IOException
+	 * @throws ServletException in the event of a ServletException
+	 */
+	void handle(HttpServletRequest request, HttpServletResponse response,
+			AccessDeniedException accessDeniedException) throws IOException,
+			ServletException;
+}
+```
+
+#### AuthenticationEntryPoint
+
+##### AuthenticationException
+
+```
+用于处理未通过身份认证的用户（如匿名）
+如访问需要权限才能访问的资源时响应异常，或者重定向到特定的网页
+
+/**
+ * Used by {@link ExceptionTranslationFilter} to commence an authentication scheme.
+ *
+ * @author Ben Alex
+ */
+public interface AuthenticationEntryPoint {
+
+	/**
+	 * Commences an authentication scheme.
+	 * <p>
+	 * <code>ExceptionTranslationFilter</code> will populate the <code>HttpSession</code>
+	 * attribute named
+	 * <code>AbstractAuthenticationProcessingFilter.SPRING_SECURITY_SAVED_REQUEST_KEY</code>
+	 * with the requested target URL before calling this method.
+	 * <p>
+	 * Implementations should modify the headers on the <code>ServletResponse</code> as
+	 * necessary to commence the authentication process.
+	 *
+	 * @param request that resulted in an <code>AuthenticationException</code>
+	 * @param response so that the user agent can begin authentication
+	 * @param authException that caused the invocation
+	 *
+	 */
+	void commence(HttpServletRequest request, HttpServletResponse response,
+			AuthenticationException authException) throws IOException, ServletException;
+}
+```
 
 
-### Security configuration
+
+
+
+
+
+### Security Configuration
+
+#### @EnableWebSecurity( 激活 Spring web Security )
+
+```
+1: 加载了WebSecurityConfiguration配置类, 配置安全认证策略。
+2: 加载了AuthenticationConfiguration, 配置了认证信息
+
+@Import({ WebSecurityConfiguration.class,
+		SpringWebMvcImportSelector.class,
+		OAuth2ImportSelector.class })
+@EnableGlobalAuthentication
+@Configuration
+public @interface EnableWebSecurity {
+	/**
+	 * Controls debugging support for Spring Security. Default is false.
+	 * @return if true, enables debug support with Spring Security
+	 */
+	boolean debug() default false;
+}
+
+```
+
+ 
+
+#### @EnableGlobalMethodSecurity( 开启Spring方法级安全 )
+
+
+
+```java
+@Import({ GlobalMethodSecuritySelector.class })
+@EnableGlobalAuthentication
+@Configuration
+public @interface EnableGlobalMethodSecurity {
+
+	/**
+	 * 确定 前置注解[@PreAuthorize,@PostAuthorize,..] 是否启用
+	 */
+	boolean prePostEnabled() default false;
+
+	/**
+	 * 确定安全注解 [@Secured] 是否启用
+	 */
+	boolean securedEnabled() default false;
+
+	/**
+	 * 确定 JSR-250注解 [@RolesAllowed..]是否启用
+	 */
+	boolean jsr250Enabled() default false;
+
+	/**
+	 * Indicate whether subclass-based (CGLIB) proxies are to be created ({@code true}) as
+	 * opposed to standard Java interface-based proxies ({@code false}). The default is
+	 * {@code false}. <strong>Applicable only if {@link #mode()} is set to
+	 * {@link AdviceMode#PROXY}</strong>.
+	 *
+	 * <p>
+	 * Note that setting this attribute to {@code true} will affect <em>all</em>
+	 * Spring-managed beans requiring proxying, not just those marked with the Security
+	 * annotations. For example, other beans marked with Spring's {@code @Transactional}
+	 * annotation will be upgraded to subclass proxying at the same time. This approach
+	 * has no negative impact in practice unless one is explicitly expecting one type of
+	 * proxy vs another, e.g. in tests.
+	 *
+	 * @return true if CGILIB proxies should be created instead of interface based
+	 * proxies, else false
+	 */
+	boolean proxyTargetClass() default false;
+
+	/**
+	 * Indicate how security advice should be applied. The default is
+	 * {@link AdviceMode#PROXY}.
+	 * @see AdviceMode
+	 *
+	 * @return the {@link AdviceMode} to use
+	 */
+	AdviceMode mode() default AdviceMode.PROXY;
+
+	/**
+	 * Indicate the ordering of the execution of the security advisor when multiple
+	 * advices are applied at a specific joinpoint. The default is
+	 * {@link Ordered#LOWEST_PRECEDENCE}.
+	 *
+	 * @return the order the security advisor should be applied
+	 */
+	int order() default Ordered.LOWEST_PRECEDENCE;
+}
+```
+
+
+
+
+
+#### WebSecurityConfigurerAdapter
 
 ```
 @EnableWebSecurity
@@ -615,3 +1671,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 }
 ```
+
+
+
+
+
+ {"username": "12356", "password": "123456","rememberMe":true}
+
+RememberMeAuthenticationFilter 的作用？？

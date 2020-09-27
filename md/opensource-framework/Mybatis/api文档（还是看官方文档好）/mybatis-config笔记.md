@@ -7,7 +7,7 @@ VO参数
   - settings 设置
   - typeAliases 类型别名
   - typeHandlers 类型处理器
-    - set 存  get 取
+    - set 存  get 取    jdbctype  convert with object type
   - objectFactory 对象工厂
   - plugins 插件
   - environments 环境

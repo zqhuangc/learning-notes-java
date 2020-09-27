@@ -86,7 +86,6 @@ JVM/Java 断言：assert 表达式
 2. 参考理解`@Constraint`
 3. 实现`ConstraintValidator`接口
 4. 将`ConstraintValidator`接口，@Constraint#validateby
-5. 
 
 
 

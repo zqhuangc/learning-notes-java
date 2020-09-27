@@ -23,3 +23,24 @@ Kibana 是 Elasticsearch 分析和搜索仪表板。
 
 ### kibana 连接到 elasticsearch
 在config目录下的kibana.yml 文件下 elasticsearch.url: "http://1127.0.0.1:9200"
+
+
+
+
+
+#### dev tools：
+
+```json
+GET _search
+{
+  "query": {
+    "match_all":{}
+    "match_phrase": {
+      "message" : "nihao"
+    }
+  }
+}
+```
+
+
+
