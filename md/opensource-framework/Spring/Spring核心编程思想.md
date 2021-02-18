@@ -659,7 +659,7 @@ new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
   * Java API 配置元信息
     * 命名方式：BeanDefinitionRegistry#registerBeanDefinition(String,BeanDefinition)
     * 非命名方式：BeanDefinitionReaderUtils#registerWithGeneratedName
-                                                                ​    (AbstractBeanDefinition,BeanDefinitionRegistry)
+                                                    ​    ​    ​    ​    (AbstractBeanDefinition,BeanDefinitionRegistry)
     * 配置类方式：AnnotatedBeanDefinitionReader#register(Class...)
 
 
@@ -1836,6 +1836,48 @@ linkedhashset
 
 
 ## 20 面试题精选
+
+依赖查找(注入)的Bean会被缓存吗?
+
+·单例Bean(Singleton) -会
+
+·缓存位置：org.springframework.beans.factory.support.Default Singleton Bean Registry#singleton Objects
+
+属性
+
+·原型Bean(Prototype) -不会
+
+·当依赖查询或依赖注入时， 根据Bean Definition每次创建
+
+·其他Scope Bean
+
+·request：每个ServletRequest内部缓存， 生命周期维持在每次HTTP请求
+
+·session：每个HttpSession内部缓存， 生命周期维持在每个用户HTTP会话
+
+·application：当前Servlet应用内部缓存
+
+
+
+Bean的处理流程是怎样的?
+
+·解析范围-Configuration Class中的@Bean方法
+
+·方法类型-静态@Bean方法和实例@Bean方法
+
+
+
+BeanFactory是如何处理循环依赖的?
+
+·预备知识
+
+·循环依赖开关(方法) -Abstract Auto wire Capable BeanFactory#set Allow Circular References
+
+·单例工程(属性) -Default Singleton Bean Registry#singleton Factories
+
+·获取早期未处理Bean(方法) -Abstract Auto wire Capable BeanFactory#get Early Bean Reference
+
+·早期未处理Bean(属性) -Default Singleton Bean Registry#early Singleton Objects
 
 
 
@@ -3421,6 +3463,12 @@ ClassLoader#getSystemResources或者getResources
 * 基于 ResourceBundle + MessageFormat 组合 MessageSource 实现
   * org.springframework.context.support.ResourceBundleMessageSource
 
+getMessage
+
+code  --- key
+
+
+
 > 无法重置 format ， locale，使用内建的 MessageFormat 
 
 * 可重载 Properties + MessageFormat 组合 MessageSource 实现
@@ -3449,7 +3497,7 @@ ClassLoader#getSystemResources或者getResources
   * Spring Boot 通过外部化配置简化 MessageSource Bean 构建
   * Spring Boot 基于 Bean Validation 校验非常普遍
 
-
+basename
 
 ## 09 面试题精选
 
@@ -3555,7 +3603,7 @@ KQueue
       * FieldError：对象（Bean）属性（Property）错误
     * 通过 ObjectError 和 FieldError 关联 MessageSource 实现获取最终文案
 
-
+Errors 的选型问题
 
 ## 06 Validator 的救赎：如果没有 Bean Validation, Validator 将会在哪里吗？
 
@@ -3563,6 +3611,8 @@ KQueue
   * 核心组件 - org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
   * 依赖 Bean Validation - JSR-303 or JSR-349 provider
   * Bean 方法参数校验 - org.springframework.validation.beanvalidation.MethodValidationPostProcessor
+
+推荐 Bean Validation 扩展
 
 
 
@@ -3594,6 +3644,9 @@ KQueue
 ## 01 Spring 数据绑定使用场景：为什么官方文档描述一笔带过？
 
 * Spring BeanDefinition 到 Bean 实例创建
+  * xml 配置 BeanDefinition 
+  * 硬编码 BeanDefinition 
+  * 注解 BeanDefinition 
 * Spring 数据绑定（DataBinder）
 * Spring Web 参数绑定（WebDataBinder）
 
@@ -3630,7 +3683,8 @@ MutablePropertyValues
 
 * DataBinder 绑定方法
   * bind(PropertyValues)：将 PropertyValues Key-Value 内容映射到关联 Bean（target）中的属性上
-  * 假设 PropertyValues 中包含“name = 小马哥”的键值对，同时 Bean 对象 User 中存在 name
+
+    假设 PropertyValues 中包含“name = 小马哥”的键值对，同时 Bean 对象 User 中存在 name
     属性，当 bind 方法执行时，User 对象中的 name 属性值将被绑定为“小马哥”。
 
 
@@ -3703,7 +3757,11 @@ MutablePropertyValues
 | java.beans.MethodDescriptor   | JavaBeans 方法描述符     |
 | java.beans.EventSetDescriptor | JavaBeans 事件集合描述符 |
 
+Introspector 反射的上层 api 
 
+反射的整合
+
+软弱引用
 
 ## 08 DataBinder 数据校验：又见 Validator
 
@@ -3862,6 +3920,8 @@ IntegerToEnum
 * 局限二：仅能转换单一的 Source Type 和 Target Type
   * 应对：使用 org.springframework.core.convert.converter.GenericConverter 代替
 
+不适用复合类型（array， collection， map），子参数问题
+
 
 
 ## 10 GenericConverter 接口：为什么 GenericConverter 比 Converter 更通用？
@@ -3902,8 +3962,12 @@ IntegerToEnum
 
 
 * 注册转换器实现
-  * 通过 ConversionServiceFactoryBean  Spring Bean（conversionService 固定名称）
+  * 通过 ConversionServiceFactoryBean  Spring Bean（`conversionService` spring bean固定名称）
   * 通过 org.springframework.core.convert.ConversionService API
+
+typeconverter
+
+
 
 
 
@@ -3916,9 +3980,7 @@ IntegerToEnum
 | GenericConversionService           | 通用 ConversionService 模板实现，不内置转化器实现            |
 | DefaultConversionService           | 基础 ConversionService 实现，内置常用转化器实现              |
 | FormattingConversionService        | 通用 Formatter + GenericConversionService 实现，不内置转化器和 Formatter 实现 |
-| DefaultFormattingConversionService | DefaultConversionService + 格式化 实现（如：JSR-354 Money &
-Currency, JSR-310 Date-Time） |
-
+| DefaultFormattingConversionService | DefaultConversionService + 格式化 实现（如：JSR-354 Money &<br/>Currency, JSR-310 Date-Time） |
 
 
 ## 14 ConversionService 作为依赖-能够同时作为依赖查找和依赖注入的来源吗？
@@ -3982,6 +4044,16 @@ Currency, JSR-310 Date-Time） |
 
 ## 01 Java 泛型基础：泛型参数信息在擦写后还会存在吗？
 
+泛型：声明中具有一个或者多个类型参数的类或者接口  ，如 List\<E>
+
+每种泛型定义一组参数化的类型（parameterized type），格式为：先是类或者接口的名称，接着用尖括号（<>）把对应于泛型形式类型参数的实际类型参数列表括起来
+
+参数化类型：List\<String> 是一个参数化的类型，类型参数 String，形式类型参数 E
+
+原生态类型：List
+
+
+
 * 泛型类型
   * 泛型类型是在类型上参数化的泛型类或接口
 
@@ -4001,7 +4073,11 @@ Currency, JSR-310 Date-Time） |
     * 必要时插入类型转换以保持类型安全。
     * 生成桥方法以保留扩展泛型类型中的多态性。
 
+
+
 兼容以前版本
+
+
 
 ## 02 Java 5 类型接口-Type： Java 类型到底是 Type 还是 Class ?
 
@@ -4027,7 +4103,9 @@ Currency, JSR-310 Date-Time） |
 | 泛型接口（Interfaces）           | java.lang.Class#getGenericInterfaces() |
 | 泛型声明（Generics Declaration） | java.lang.reflect.GenericDeclaration   |
 
+泛型父类 带泛型的父类
 
+泛型接口 带泛型的接口
 
 ## 03 Spring 泛型类型辅助类：GenericTypeResolver
 
@@ -4043,6 +4121,7 @@ Currency, JSR-310 Date-Time） |
     * resolveTypeArguments
   * 处理泛型类型变量（TypeVariable）相关方法
     * getTypeVariableMap
+
 
 
 ## 04 Spring 泛型集合类型辅助类：GenericCollectionTypeResolver

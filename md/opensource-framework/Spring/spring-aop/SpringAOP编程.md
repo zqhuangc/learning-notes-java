@@ -2650,7 +2650,7 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 
 
 
-## 源码解析
+## 源码解析（AOP 工作流程）
 
 SmartInstantiationAwareBeanPostProcessor 继承自InstantiationAwareBeanPostProcessor
 
@@ -2696,13 +2696,11 @@ AbstractAspectJAdvisorFactory  处理 aop 相关注解
 
 #### 第二步（创建代理）
 
-AbstractAutoProxyCreator#getCustomTargetSource 若自定义 TargetSource 则
-
-生成代理，
+AbstractAutoProxyCreator#getCustomTargetSource 若自定义 TargetSource 则生成代理，
 
 在 postProcessAfterInstantiation，postProcessBeforeInitialization不同额外处理
 
-否则 在 AbstractAutoProxyCreator#postProcessAfterInitialization 是生成代理
+否则 在 AbstractAutoProxyCreator#postProcessAfterInitialization 时生成代理
 
 ``` 
 AbstractAutoProxyCreator#wrapIfNecessary
@@ -2710,17 +2708,18 @@ AbstractAdvisorAutoProxyCreator#getAdvicesAndAdvisorsForBean
 AbstractAdvisorAutoProxyCreator#findEligibleAdvisors 
 AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors得到前面缓存的 Advisor
 AopUtils.findAdvisorsThatCanApply
+
 首先通过 Pointcut#getClassFilter 判断是否为需要代理的类型
 PointcutExpressionImpl#couldMatchJoinPointsInType
 考虑 待代理 class 本身为代理类，得到原被代理类型
 获取需代理类型中的所有方法
 IntroductionAwareMethodMatcher#matches中进行匹配 得到合适的Advisor
-extendAdvisor针对aspectJ ExposeInvocationInterceptor
+extendAdvisor 针对 aspectJ ExposeInvocationInterceptor
 
 若符合被代理的条件，继续执行，否则直接返回，所有容器中的 bean 都会被判断
 
-AbstractAutoProxyCreator#createProxy 以TargetSource进行处理
-ProxyFactory#copyfrom(this) 得到ProxyConfig信息
+AbstractAutoProxyCreator#createProxy 包装成 TargetSource 进行处理
+ProxyFactory#copyfrom(this) 得到 ProxyConfig 信息
 AbstractAutoProxyCreator#buildAdvisors
 GlobalAdvisorAdapterRegistry#getInstance#wrap 实际调用
 DefaultAdvisorAdapterRegistry#wrap
@@ -2733,12 +2732,13 @@ DefaultAopProxyFactory#createAopProxy(ProxyCreatorSupport)
 getProxy 底层正常创建动态代理方式创建代理
 
 生成的代理会缓存在 AbstractAutoProxyCreator#proxyTypes(rawType,ProxyType)
-存储以经过处理的 bean
+存储已经过处理的 bean
+
 AbstractAutoProxyCreator#advisedBeans(rawType,true) 有代理
 AbstractAutoProxyCreator#advisedBeans(rawType,false)没代理
 
 
-在 方法调用时 ， invoke
+在 方法调用时 ， 执行 invoke
 ```
 
 ```
@@ -2825,7 +2825,7 @@ class AspectJAutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	public void registerBeanDefinitions(
 			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 			
-	//这部非常重要，就是去注册了一个基于注解的自动代理创建器（如国需要的话）  当然，下面还会着重分析
+	//这部非常重要，就是去注册了一个基于注解的自动代理创建器（如果需要的话）  当然，下面还会着重分析
 		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
 		AnnotationAttributes enableAspectJAutoProxy =

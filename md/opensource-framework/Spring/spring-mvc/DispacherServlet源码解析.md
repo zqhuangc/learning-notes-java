@@ -1,4 +1,4 @@
-## DispacherServlet
+# DispacherServlet
 
 DispacherServlet ： 接收 request 
 
@@ -7,7 +7,7 @@ IOC容器启动时就会调用 onRefresh方法，
 HandlerMapping : url 与 方法 对应关系  
 HandlerMapping 和 HandlerAdapter 都是通过注解扫描获得
 
-### 初始化 onRefresh
+## 初始化 onRefresh
 
 ```java
 protected void onRefresh(ApplicationContext context){
@@ -34,9 +34,17 @@ protected void initStrategies(ApplicationContext context) {
 }
 ```
 
-ModelMap  
+### initHandlerMappings
 
-### 请求处理 doDispatch
+### initHandlerAdapters
+
+### initViewResolvers
+
+
+
+## 请求处理 doDispatch
+
+### 流程
 
 ```java
 protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -81,7 +89,35 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 调用ViewResolver进行视图解析
 渲染视图
 
+### HandlerAdapter#handle(...)
 
+### processDispatchResult 视图处理(页面渲染)
+
+#### render
+
+##### resolveViewName
+
+```java
+@Nullable
+	protected View resolveViewName(String viewName, @Nullable Map<String, Object> model,
+			Locale locale, HttpServletRequest request) throws Exception {
+
+		if (this.viewResolvers != null) {
+			// viewResolver 处理
+            for (ViewResolver viewResolver : this.viewResolvers) {
+				View view = viewResolver.resolveViewName(viewName, locale);
+				if (view != null) {
+					return view;
+				}
+			}
+		}
+		return null;
+	}
+```
+
+
+
+## HandlerAdapter
 
 ### RequestMappingHandlerAdapter
 

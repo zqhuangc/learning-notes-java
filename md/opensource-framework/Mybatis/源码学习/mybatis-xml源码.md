@@ -433,7 +433,7 @@ public <T> void addMapper(Class<T> type) {
 
 
 
-##### MapperAnnotationBuilder#parse
+##### `MapperAnnotationBuilder#parse`
 
 ```java
 public void parse() {
@@ -482,7 +482,7 @@ assistant.addMappedStatement
  }
 ```
 
-##### XMLMapperBuilder#parse
+##### `XMLMapperBuilder#parse`
 
 ```java
 public void parse() {
@@ -523,9 +523,13 @@ private void bindMapperForNamespace() {
 
 
 
-##### XMLStatementBuilder#parseStatementNode 解析 sql相关标签
+##### `XMLStatementBuilder#parseStatementNode 解析 sql相关标签`
 
-##### MapperBuilderAssistant#addMappedStatement
+injectMappedStatement
+
+resultMapElement
+
+##### `MapperBuilderAssistant#addMappedStatement`（mapper信息构建）
 
 ##### MappedStatement$Builder
 
@@ -893,7 +897,7 @@ public interface Executor {
 
 
 
-### SimpleExecutor#doQuery
+### SimpleExecutor#doQuery（执行 sql）
 
 ```
   @Override
@@ -934,6 +938,8 @@ public interface Executor {
 
 
 ##### PreparedStatementHandler#query
+
+
 
 ```
   @Override

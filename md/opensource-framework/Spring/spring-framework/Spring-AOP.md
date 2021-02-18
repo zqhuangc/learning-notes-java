@@ -404,3 +404,906 @@ protected Object createProxyClassAndInstance(Enhancer enhancer, Callback[] callb
 }
 ```
  Enhancer允许为非接口类型创建一个Java代理。Enhancer动态创建了给定类型的子类但是拦截了所有的方法。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**本文主要介绍spring aop中9种切入点表达式的写法**
+
+1. **execute**
+2. **within**
+3. **this**
+4. **target**
+5. **args**
+6. **@target**
+7. **@within**
+8. **@annotation**
+9. @args
+
+## 1.execute表达式
+
+### 拦截任意公共方法
+
+```
+execution(public * *(..))
+```
+
+### 拦截以set开头的任意方法
+
+```
+execution(* set*(..))
+```
+
+### 拦截类或者接口中的方法
+
+```
+execution(* com.xyz.service.AccountService.*(..))
+```
+
+> 拦截**AccountService**(类、接口)中定义的所有方法
+
+### 拦截包中定义的方法，不包含子包中的方法
+
+```
+execution(* com.xyz.service.*.*(..))
+```
+
+> 拦截**com.xyz.service**包中所有类中任意方法，不包含子包中的类
+
+### 拦截包或者子包中定义的方法
+
+```
+execution(* com.xyz.service..*.*(..))
+```
+
+> 拦截**com.xyz.service**包或者子包中定义的所有方法
+
+## 2.within表达式
+
+> 表达式格式：包名.* 或者 包名..*
+
+### 拦截包中任意方法，不包含子包中的方法
+
+```
+within(com.xyz.service.*)
+```
+
+> 拦截service包中任意类的任意方法
+
+### 拦截包或者子包中定义的方法
+
+```
+within(com.xyz.service..*)
+```
+
+> 拦截service包及子包中任意类的任意方法
+
+## 3.this表达式
+
+### 代理对象为指定的类型会被拦截
+
+> **目标对象使用aop之后生成的代理对象必须是指定的类型才会被拦截，注意是目标对象被代理之后生成的代理对象和指定的类型匹配才会被拦截**
+
+```
+this(com.xyz.service.AccountService)
+```
+
+### 示例
+
+this表达式的使用，可能不是很好理解，用示例说明一下：
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+
+
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+
+
+   <modelVersion>4.0.0</modelVersion>
+
+
+
+   <parent>
+
+
+
+      <groupId>org.springframework.boot</groupId>
+
+
+
+      <artifactId>spring-boot-starter-parent</artifactId>
+
+
+
+      <version>2.1.4.RELEASE</version>
+
+
+
+      <relativePath/> <!-- lookup parent from repository -->
+
+
+
+   </parent>
+
+
+
+   <groupId>com.ms</groupId>
+
+
+
+   <artifactId>spring-aop-demo</artifactId>
+
+
+
+   <version>0.0.1-SNAPSHOT</version>
+
+
+
+   <name>spring-aop-demo</name>
+
+
+
+   <description>Demo project for Spring Boot</description>
+
+
+
+ 
+
+
+
+   <properties>
+
+
+
+      <java.version>1.8</java.version>
+
+
+
+   </properties>
+
+
+
+ 
+
+
+
+   <dependencies>
+
+
+
+      <dependency>
+
+
+
+         <groupId>org.springframework.boot</groupId>
+
+
+
+         <artifactId>spring-boot-starter-aop</artifactId>
+
+
+
+      </dependency>
+
+
+
+      <dependency>
+
+
+
+         <groupId>org.projectlombok</groupId>
+
+
+
+         <artifactId>lombok</artifactId>
+
+
+
+      </dependency>
+
+
+
+      <dependency>
+
+
+
+         <groupId>org.springframework.boot</groupId>
+
+
+
+         <artifactId>spring-boot-starter-test</artifactId>
+
+
+
+         <scope>test</scope>
+
+
+
+      </dependency>
+
+
+
+   </dependencies>
+
+
+
+ 
+
+
+
+   <build>
+
+
+
+      <plugins>
+
+
+
+         <plugin>
+
+
+
+            <groupId>org.springframework.boot</groupId>
+
+
+
+            <artifactId>spring-boot-maven-plugin</artifactId>
+
+
+
+         </plugin>
+
+
+
+      </plugins>
+
+
+
+   </build>
+
+
+
+ 
+
+
+
+</project>
+package com.yezi.aop.jthis.demo1;
+
+
+
+ 
+
+
+
+public interface IService {
+
+
+
+    void m1();
+
+
+
+}
+package com.yezi.aop.jthis.demo1;
+
+
+
+ 
+
+
+
+import lombok.extern.slf4j.Slf4j;
+
+
+
+import org.springframework.stereotype.Component;
+
+
+
+ 
+
+
+
+@Slf4j
+
+
+
+@Component
+
+
+
+public class ServiceImpl implements IService {
+
+
+
+    @Override
+
+
+
+    public void m1() {
+
+
+
+        log.info("切入点this测试！");
+
+
+
+    }
+
+
+
+}
+package com.yezi.aop.jthis.demo1;
+
+
+
+ 
+
+
+
+import lombok.extern.slf4j.Slf4j;
+
+
+
+import org.aspectj.lang.ProceedingJoinPoint;
+
+
+
+import org.aspectj.lang.annotation.Around;
+
+
+
+import org.aspectj.lang.annotation.Aspect;
+
+
+
+import org.aspectj.lang.annotation.Pointcut;
+
+
+
+import org.springframework.stereotype.Component;
+
+
+
+@Aspect
+
+
+
+@Component
+
+
+
+@Slf4j
+
+
+
+public class Interceptor1 {
+
+
+
+ 
+
+
+
+    @Pointcut("this(com.ms.aop.jthis.demo1.ServiceImpl)")
+
+
+
+    public void pointcut() {
+
+
+
+    }
+
+
+
+ 
+
+
+
+    @Around("pointcut()")
+
+
+
+    public Object invoke(ProceedingJoinPoint invocation) throws Throwable {
+
+
+
+        log.info("方法执行之前");
+
+
+
+        Object result = invocation.proceed();
+
+
+
+        log.info("方法执行完毕");
+
+
+
+        return result;
+
+
+
+    }
+
+
+
+}
+package com.yezi.aop.jthis.demo1;
+
+
+
+ 
+
+
+
+import lombok.extern.slf4j.Slf4j;
+
+
+
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+
+
+import org.springframework.context.annotation.ComponentScan;
+
+
+
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+
+
+ 
+
+
+
+@ComponentScan(basePackageClasses = {Client.class})
+
+
+
+@EnableAspectJAutoProxy
+
+
+
+@Slf4j
+
+
+
+public class Client {
+
+
+
+    public static void main(String[] args) {
+
+
+
+        AnnotationConfigApplicationContext annotationConfigApplicationContext = new AnnotationConfigApplicationContext(Client.class);
+
+
+
+        IService service = annotationConfigApplicationContext.getBean(IService.class);
+
+
+
+        service.m1();
+
+
+
+        log.info("{}", service instanceof ServiceImpl);
+
+
+
+    }
+
+
+
+}
+```
+
+**执行结果**
+
+```
+10:27:12.277 [main] INFO com.yezi.aop.jthis.demo1.ServiceImpl - 切入点this测试！
+
+
+
+10:27:12.277 [main] INFO com.yezi.aop.jthis.demo1.Client - false
+```
+
+1. **@EnableAspectJAutoProxy**：表示若spring创建的对象如果实现了接口，默认使用jdk动态代理，如果没有实现接口，使用cglib创建代理对象
+
+2. 所以 **service** 是使用jdk动态代理生成的对象，**service instanceof ServiceImpl** 为 **false**
+
+3. **@Pointcut("this(com.ms.aop.jthis.demo1.ServiceImpl)")**表示被spring代理之后生成的对象必须为**com.ms.aop.jthis.demo1.ServiceImpl**才会被拦截，但是**service**不是**ServiceImpl**类型的对象了，所以不会被拦截
+
+4. 修改代码
+
+   ```
+   @EnableAspectJAutoProxy(proxyTargetClass = true)
+   ```
+
+   > **proxyTargetClass=true表示使用cglib来生成代理对象**
+
+   执行结果:
+
+   ```
+   10:34:50.736 [main] INFO com.yezi.aop.jthis.demo1.Interceptor1 - 方法执行之前
+   
+   
+   
+   10:34:50.755 [main] INFO com.yezi.aop.jthis.demo1.ServiceImpl - 切入点this测试！
+   
+   
+   
+   10:34:50.756 [main] INFO com.yezi.aop.jthis.demo1.Interceptor1 - 方法执行完毕
+   
+   
+   
+   10:34:50.756 [main] INFO com.yezi.aop.jthis.demo1.Client - true
+   ```
+
+   > service 为 ServiceImpl类型的对象，所以会被拦截
+
+## 4.target表达式
+
+### 目标对象为指定的类型被拦截
+
+```
+target(com.xyz.service.AccountService)
+```
+
+> 目标对象为AccountService类型的会被代理
+
+### 示例
+
+```
+package com.yezi.aop.target;
+
+
+
+ 
+
+
+
+public interface IService {
+
+
+
+    void m1();
+
+
+
+}
+package com.yezi.aop.target;
+
+
+
+ 
+
+
+
+import lombok.extern.slf4j.Slf4j;
+
+
+
+import org.springframework.stereotype.Component;
+
+
+
+ 
+
+
+
+@Slf4j
+
+
+
+@Component
+
+
+
+public class ServiceImpl implements IService {
+
+
+
+    @Override
+
+
+
+    public void m1() {
+
+
+
+        log.info("切入点target测试！");
+
+
+
+    }
+
+
+
+}
+package com.yezi.aop.target;
+
+
+
+ 
+
+
+
+import lombok.extern.slf4j.Slf4j;
+
+
+
+import org.aspectj.lang.ProceedingJoinPoint;
+
+
+
+import org.aspectj.lang.annotation.Around;
+
+
+
+import org.aspectj.lang.annotation.Aspect;
+
+
+
+import org.aspectj.lang.annotation.Pointcut;
+
+
+
+import org.springframework.stereotype.Component;
+
+
+
+ 
+
+
+
+@Aspect
+
+
+
+@Component
+
+
+
+@Slf4j
+
+
+
+public class Interceptor1 {
+
+
+
+ 
+
+
+
+    @Pointcut("target(com.ms.aop.target.ServiceImpl)")
+
+
+
+    public void pointcut() {
+
+
+
+    }
+
+
+
+ 
+
+
+
+    @Around("pointcut()")
+
+
+
+    public Object invoke(ProceedingJoinPoint invocation) throws Throwable {
+
+
+
+        log.info("方法执行之前");
+
+
+
+        Object result = invocation.proceed();
+
+
+
+        log.info("方法执行完毕");
+
+
+
+        return result;
+
+
+
+    }
+
+
+
+}
+package com.yezi.aop.target;
+
+
+
+ 
+
+
+
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+
+
+import org.springframework.context.annotation.ComponentScan;
+
+
+
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+
+
+ 
+
+
+
+@ComponentScan(basePackageClasses = {Client.class})
+
+
+
+@EnableAspectJAutoProxy
+
+
+
+public class Client {
+
+
+
+    public static void main(String[] args) {
+
+
+
+        AnnotationConfigApplicationContext annotationConfigApplicationContext = new AnnotationConfigApplicationContext(Client.class);
+
+
+
+        IService service = annotationConfigApplicationContext.getBean(IService.class);
+
+
+
+        service.m1();
+
+
+
+    }
+
+
+
+}
+```
+
+执行结果：
+
+```
+10:49:01.674 [main] INFO com.yezi.aop.target.Interceptor1 - 方法执行之前
+
+
+
+10:49:01.674 [main] INFO com.yezi.aop.target.ServiceImpl - 切入点target测试！
+
+
+
+10:49:01.674 [main] INFO com.yezi.aop.target.Interceptor1 - 方法执行完毕
+```
+
+### this 和 target 的不同点
+
+1. **this作用于代理对象，target作用于目标对象**
+2. **this表示目标对象被代理之后生成的代理对象和指定的类型匹配会被拦截**，匹配的是代理对象
+3. **target表示目标对象和指定的类型匹配会被拦截**，匹配的是目标对象
+
+## 5.args 表达式
+
+### 匹配方法中的参数
+
+```
+@Pointcut("args(com.yezi.aop.args.demo1.UserModel)")
+```
+
+> 匹配只有一个参数，且类型为**com.ms.aop.args.demo1.UserModel**
+
+### 匹配多个参数
+
+```
+args(type1,type2,typeN)
+```
+
+### 匹配任意多个参数
+
+```
+@Pointcut("args(com.yezi.aop.args.demo1.UserModel,..)")
+```
+
+> 匹配第一个参数类型为**com.ms.aop.args.demo1.UserModel**的所有方法, `..` 表示任意个参数
+
+## 6.@target表达式
+
+### 匹配的目标对象的类有一个指定的注解
+
+```
+@target(com.yezi.aop.jtarget.Annotation1)
+```
+
+> 目标对象中包含**com.ms.aop.jtarget.Annotation1**注解，调用该目标对象的任意方法都会被拦截
+
+## 7.@within表达式
+
+### 指定匹配必须包含某个注解的类里的所有连接点
+
+```
+@within(com.yezi.aop.jwithin.Annotation1)
+```
+
+> 声明有**com.ms.aop.jwithin.Annotation1**注解的类中的所有方法都会被拦截
+
+### @target 和 @within 的不同点
+
+1. **@target(注解A)：**判断被**调用的目标对象**中是否声明了注解A，如果有，会被拦截
+2. **@within(注解A)：** 判断被**调用的方法所属的类**中是否声明了注解A，如果有，会被拦截
+3. @target关注的是被调用的对象，@within关注的是调用的方法所在的类
+
+## 8.@annotation表达式
+
+### 匹配有指定注解的方法（注解作用在方法上面）
+
+```
+@annotation(com.yezi.aop.jannotation.demo2.Annotation1)
+```
+
+> 被调用的方法包含指定的注解
+
+## 9.@args表达式
+
+### 方法参数所属的类型上有指定的注解，被匹配
+
+> 注意：是**方法参数所属的类型**上有指定的注解，不是方法参数中有注解
+
+- 匹配1个参数，且第1个参数所属的类中有Anno1注解
+
+```
+@args(com.yezi.aop.jargs.demo1.Anno1)
+```
+
+- 匹配多个参数，且多个参数所属的类型上都有指定的注解
+
+```
+@args(com.yezi.aop.jargs.demo1.Anno1,com.ms.aop.jargs.demo1.Anno2)
+```
+
+- 匹配多个参数，且第一个参数所属的类中有Anno1注解
+
+```
+@args(com.yezi.aop.jargs.demo2.Anno1,..)
+```
