@@ -1,6 +1,12 @@
+
+
 ## TransactionStatus
 
 它表示`事务的状态`，若有需要，事务代码可以使用它来检索状态信息，以编程方式请求回滚（而不是抛出导致隐式回滚的异常）
+
+> The `TransactionStatus` interface provides a simple way for transactional code to control transaction execution and query transaction status. The concepts should be familiar, as they are common to all transaction APIs
+>
+> TransactionStatus 接口为事务代码提供了一种控制事务执行和查询事务状态的简单方法
 
 ```java
 // 可以看到它继承自SavepointManager，所以它也会处理还原点
@@ -265,6 +271,26 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 
 ## `TransactionDefinition`
 
+> The `TransactionDefinition` interface specifies:
+>
+> TransactionDefinition 接口指定:
+>
+> - Propagation: Typically, all code within a transaction scope runs in that transaction. However, you can specify the behavior if a transactional method is run when a transaction context already exists. For example, code can continue running in the existing transaction (the common case), or the existing transaction can be suspended and a new transaction created. Spring offers all of the transaction propagation options familiar from EJB CMT. To read about the semantics of transaction propagation in Spring, see [Transaction Propagation](https://docs.spring.io/spring-framework/docs/current/reference/html/data-access.html#tx-propagation).
+>
+>   传播: 通常，事务范围内的所有代码都在该事务中运行。但是，如果事务方法在事务上下文已经存在时运行，则可以指定该行为。例如，代码可以在现有事务中继续运行(常见情况) ，或者可以挂起现有事务并创建新事务。Spring 提供了 EJB CMT 中熟悉的所有事务传播选项。要了解 Spring 中事务传播的语义，请参阅事务传播。
+>
+> - Isolation: The degree to which this transaction is isolated from the work of other transactions. For example, can this transaction see uncommitted writes from other transactions?
+>
+>   隔离性: 此事务与其他事务工作隔离的程度。例如，此事务能否看到来自其他事务的未提交写操作？
+>
+> - Timeout: How long this transaction runs before timing out and being automatically rolled back by the underlying transaction infrastructure.
+>
+>   Timeout: 此事务在超时并被基础事务基础结构自动回滚之前运行多长时间。
+>
+> - Read-only status: You can use a read-only transaction when your code reads but does not modify data. Read-only transactions can be a useful optimization in some cases, such as when you use Hibernate.
+>
+>   只读状态: 当代码读取但不修改数据时，可以使用只读事务。在某些情况下，只读事务可能是一种有用的优化，例如在使用 Hibernate 时。
+
 #### DelegatingTransactionDefinition
 
 代理抽象类，啥都木有做。内部持有一个`TransactionDefinition targetDefinition`的引用而已，所有方法都是委托给`targetDefinition`去做的
@@ -315,6 +341,8 @@ public interface TransactionAttributeSource {
 > （实际真正处理它的是父类 TransactionAspectSupport，它会做匹配~~~~） 具体的在详解TransactionInterceptor的时候会讲述到
 
 #### NameMatchTransactionAttributeSource
+
+
 
 ```java
 // 自定义配置一个事务拦截器（@Transaction注解也会使用此拦截器进行拦截）
@@ -746,7 +774,7 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 
 ##### DataSourceTransactionObject
 
-## (编程式事务)CallbackPreferringPlatformTransactionManager
+## CallbackPreferringPlatformTransactionManager(编程式事务)
 
 WebSphereUowTransactionManager
 
@@ -754,7 +782,7 @@ joinpointIdentification
 
 
 
-## TransactionInterceptor：事务拦截器
+## `TransactionInterceptor`：事务拦截器
 
 真正做事情的其实还是在父类，它有一个执行事务的模版
 
@@ -768,10 +796,12 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 	// 可议自己指定Properties 以及 TransactionAttributeSource 
 	public TransactionInterceptor() {
 	}
+    
 	public TransactionInterceptor(PlatformTransactionManager ptm, Properties attributes) {
 		setTransactionManager(ptm);
 		setTransactionAttributes(attributes);
 	}
+    
 	public TransactionInterceptor(PlatformTransactionManager ptm, TransactionAttributeSource tas) {
 		setTransactionManager(ptm);
 		setTransactionAttributeSource(tas);
@@ -793,7 +823,9 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 
 ```
 
-## TransactionAspectSupport
+
+
+## `TransactionAspectSupport`
 
 ```java
 // 通过BeanFactoryAware获取到BeanFactory
@@ -852,6 +884,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		tas.setProperties(transactionAttributes);
 		this.transactionAttributeSource = tas;
 	}
+    
 	// 若你有多种匹配策略，这也是支持的  可谓非常强大有木有~~~
 	public void setTransactionAttributeSources(TransactionAttributeSource... transactionAttributeSources) {
 		this.transactionAttributeSource = new CompositeTransactionAttributeSource(transactionAttributeSources);
@@ -1516,6 +1549,118 @@ JDBC几个重要的API
 > 说归说，实现快速开发，高可维护性又必然是永远的趋势。所以`会用、熟练的使用永远摆在第一位`
 >
 > 个人建议看任何问题都需要有辩证性的思维。肯定不是不推荐使用工具（**毕竟我认为重复造轮子是在浪费生命**），相反反而是更加的推崇。但是我们需要知道它背后得设计思路、设计原理，才能做到心中有数，更加运用自如。更重要的是扩展起来也是才能胸有成足，做到有把握：`稳`
+
+
+
+# 声明式事务管理
+
+## xml schema
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx
+        https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <aop:config>
+
+        <aop:pointcut id="defaultServiceOperation"
+                expression="execution(* x.y.service.*Service.*(..))"/>
+
+        <aop:pointcut id="noTxServiceOperation"
+                expression="execution(* x.y.service.ddl.DefaultDdlManager.*(..))"/>
+
+        <aop:advisor pointcut-ref="defaultServiceOperation" advice-ref="defaultTxAdvice"/>
+
+        <aop:advisor pointcut-ref="noTxServiceOperation" advice-ref="noTxAdvice"/>
+
+    </aop:config>
+
+    <!-- this bean will be transactional (see the 'defaultServiceOperation' pointcut) -->
+    <bean id="fooService" class="x.y.service.DefaultFooService"/>
+
+    <!-- this bean will also be transactional, but with totally different transactional settings -->
+    <bean id="anotherFooService" class="x.y.service.ddl.DefaultDdlManager"/>
+
+    <tx:advice id="defaultTxAdvice">
+        <tx:attributes>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <tx:advice id="noTxAdvice">
+        <tx:attributes>
+            <tx:method name="*" propagation="NEVER"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- other transaction infrastructure beans such as a TransactionManager omitted... -->
+
+</beans>
+
+
+
+<!-- from the file 'context.xml' -->
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx
+        https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- this is the service object that we want to make transactional -->
+    <bean id="fooService" class="x.y.service.DefaultFooService"/>
+
+    <!-- enable the configuration of transactional behavior based on annotations -->
+    <!-- @Transactional -->
+    <tx:annotation-driven transaction-manager="txManager"/><!-- a TransactionManager is still required --> 
+
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- (this dependency is defined somewhere else) -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- other <bean/> definitions here -->
+
+</beans>
+
+
+
+<!-- 多个事务管理器 qualifier  -->
+<tx:annotation-driven/>
+
+    <bean id="transactionManager1" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        ...
+        <qualifier value="order"/>
+    </bean>
+
+    <bean id="transactionManager2" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        ...
+        <qualifier value="account"/>
+    </bean>
+
+    <bean id="transactionManager3" class="org.springframework.data.r2dbc.connectionfactory.R2dbcTransactionManager">
+        ...
+        <qualifier value="reactive-account"/>
+    </bean>
+```
+
+
 
 ## @Transactional 的使用 类比 @Async
 

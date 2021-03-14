@@ -2,7 +2,7 @@ https://blog.csdn.net/zhanglf02/article/details/78132304
 
 ## 架构
 
-![AOP 类树图](../../../image/SpringAOP.png)
+![AOP 类树图](../../../image/spring/SpringAOP.png)
 
 ## AOP(面向切面的编程)使用
 

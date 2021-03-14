@@ -30,6 +30,12 @@ DefaultBeanDefinitionDocumentReader 是 Spring 核心的解析器
 
 对spring 中的类做泛型扩展，更灵活
 
+
+
+RequestDispatcher.forward()
+
+Locale：RequestContext.getLocale()   timeZone
+
 ## [事件驱动](..\..\..\md\Java\并发\Java并发集合框架(J.U.C).md)
 
 

@@ -3,7 +3,15 @@ springmvc private和public方法
 
 可认为能100%零配置（无xml，property）
 
+
+
 RequestMappingInfo
+
+[MultipartResolver](https://docs.spring.io/spring-framework/docs/5.3.x/reference/html/web.html#mvc-multipart)：MultipartConfigElement
+
+`enableLoggingRequestDetails` 
+
+ServletRequest.getParameter*()   post
 
 #### UriComponents
 

@@ -11,22 +11,32 @@ SpEL的几个概念：
 上下文（“在哪干”）：表达式对象执行的环境，该环境可能定义变量、定义自定义函数、提供类型转换等等
 root根对象及活动上下文对象（“对谁干”）：root根对象是默认的活动上下文对象，活动上下文对象表示了当前表达式操作的对象
 
+```
+ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression("'Hello World'.concat('!')"); 
+String message = (String) exp.getValue();
+
+Expression exp = parser.parseExpression("new String('hello world').toUpperCase()"); 
+String message = exp.getValue(String.class);
+```
 
 
-步骤解释：
+
+## 步骤解释：
 
 按照SpEL支持的语法结构，写出一个expressionStr
-准备一个表达式解析器ExpressionParser，调用方法parseExpression()对它进行解析。这一步至少完成了如下三件事：
+准备一个表达式解析器ExpressionParser，调用方法  parseExpression() 对它进行解析。这一步至少完成了如下三件事：
 使用一个专门的断词器Tokenizer，将给定的表达式字符串拆分为Spring可以认可的数据格式
 根据断词器处理的操作结果生成相应的语法结构
 在这处理过程之中就需要进行表达式的对错检查（语法格式不对要精准报错出来）
-将已经处理好后的表达式定义到一个专门的对象Expression里，等待结果
-由于表达式内可能存在占位符变量${}，所以还不太适合马上直接getValue()（若不需要解析占位符那就直接getValue()也是可以拿到值的）。所以在计算之前还得设置一个表达式上下文对象`EvaluationContext`（这一步步不是必须的）
+将已经处理好后的表达式定义到一个专门的对象Expression里，等待结果由于表达式内可能存在占位符变量${}，所以还不太适合马上直接getValue()（若不需要解析占位符那就直接getValue()也是可以拿到值的）。所以在计算之前还得设置一个表达式上下文对象`EvaluationContext`（这一步步不是必须的）
 替换好占位符内容后，利用表达式对象计算出最终的结果
 
 
 
 ## ExpressionParser：表达式解析器
+
+#### 
 
 ```java
 // @since 3.0
@@ -37,16 +47,18 @@ public interface ExpressionParser {
 }
 ```
 
-
+### TemplateAwareExpressionParser#parseExpression
 
 ### SpelExpressionParser
 
 ```java
 public class SpelExpressionParser extends TemplateAwareExpressionParser {
 	private final SpelParserConfiguration configuration;
+    
 	public SpelExpressionParser() {
 		this.configuration = new SpelParserConfiguration();
 	}
+    
 	public SpelExpressionParser(SpelParserConfiguration configuration) {
 		Assert.notNull(configuration, "SpelParserConfiguration must not be null");
 		this.configuration = configuration;
@@ -92,9 +104,9 @@ public class TemplateParserContext implements ParserContext {
 
 
 
-### Expression
+### `Expression`(rootObject , this)
 
-**示的是表达式对象。**`能够根据上下文对象对自身进行计算的表达式。`
+**表示的是表达式对象。**能够根据上下文对象对自身进行计算的表达式。
 
 ```java
 // @since 3.0   表达式计算的通用抽象。  该接口提供的方法非常非常之多~~~ 但不要怕大部分都是重载的~~~
@@ -116,11 +128,12 @@ public interface Expression {
 	@Nullable
 	<T> T getValue(Object rootObject, @Nullable Class<T> desiredResultType) throws EvaluationException;
 
-	// 根据指定的上下文:EvaluationContext来计算值~~~  rootObject：跟对象
+	// 根据指定的上下文:EvaluationContext来计算值~~~  rootObject：根对象
 	@Nullable
 	Object getValue(EvaluationContext context) throws EvaluationException;
-	// 以rootObject作为表达式的root对象来计算表达式的值。 
-	// root对象：比如parser.parseExpression("name").getValue(person);相当于去person里拿到name属性的值。这个person就叫root对象
+	
+    // 以rootObject 作为表达式的 root 对象来计算表达式的值。 
+	// root对象：比如 parser.parseExpression("name").getValue(person); 相当于去person里拿到name属性的值。这个 person 就叫 root 对象
 	@Nullable
 	Object getValue(EvaluationContext context, Object rootObject) throws EvaluationException;
 	@Nullable
@@ -164,7 +177,7 @@ public interface Expression {
 
 
 
-#### SpelExpression
+#### `SpelExpression`
 
 ```java
 public class SpelExpression implements Expression {
@@ -173,11 +186,12 @@ public class SpelExpression implements Expression {
 	private static final int INTERPRETED_COUNT_THRESHOLD = 100;
 	// 放弃前尝试编译表达式的次数
 	private static final int FAILED_ATTEMPTS_THRESHOLD = 100;
-
+    //
 	private final String expression;
 	// AST：抽象语法树~
 	private final SpelNodeImpl ast; // SpelNodeImpl的实现类非常非常之多~~~
-	private final SpelParserConfiguration configuration;
+	//
+    private final SpelParserConfiguration configuration;
 
 	@Nullable
 	private EvaluationContext evaluationContext; // 如果没有指定，就会用默认的上下文 new StandardEvaluationContext()
@@ -274,7 +288,7 @@ public class SpelExpression implements Expression {
 
 
 
-### SpEL中的PropertyAccessor（重要）
+### SpEL中的 PropertyAccessor（重要）
 
 
 
@@ -298,9 +312,17 @@ tesla.setPlaceOfBirth(null);
 city = parser.parseExpression("PlaceOfBirth?.City").getValue(context, String.class);
 
 System.out.println(city); // null - does not throw NullPointerException!!!
+
+
+
+EvaluationContext context = SimpleEvaluationContext.forReadWriteDataBinding().build();
+context.setVariable("newName", "Mike Tesla");
+
+parser.parseExpression("name = #newName").getValue(context, tesla);
+System.out.println(tesla.getName())  // "Mike Tesla"
+    
+EvaluationContext context = SimpleEvaluationContext.forReadOnlyDataAccess()
 ```
-
-
 
 
 
@@ -308,13 +330,19 @@ System.out.println(city); // null - does not throw NullPointerException!!!
 
 当计算表达式解析properties, methods, fields，并帮助执行类型转换, 使用接口`EvaluationContext` 这是一个开箱即用的实现, `StandardEvaluationContext`，使用反射来操纵对象， 缓存`java.lang.reflect`的`Method`，`Field`，和`Constructor`实例 提高性能。
 
-### 解析器配置
+### SpelParserConfiguration(解析器配置)
 
 用一个parser configuration object去配置SpEL解析器是可能的, （`org.springframework.expression.spel.SpelParserConfiguration`）.配置 对象控制的一些表达组件的行为。例如，如果数据为 索引到指定索引处的数组或集合的元素是`null` 它可以自动地创建的元素。
 
+当使用由属性引用链组成的表达式时，这很有用。如果您在数组或列表中建立索引并指定的索引超出了数组或列表当前大小的末尾，则SpEL可以自动增长数组或列表以容纳该索引。为了在指定的索引处添加元素，SpEL将尝试在设置指定的值之前使用元素类型的默认构造函数创建该元素。如果元素类型没有默认构造函数，则将保留在数组或列表中的指定索引处。
+
 ### 定义bean的beandef表达支持
 
-SpEL表达式可以与XML或基于注释的配置元数据使用 定义BeanDefinitions。在这两种情况下，以定义表达式语法的 形式`＃{<表达式字符串>}
+SpEL表达式可以与XML或基于注释的配置元数据使用 定义BeanDefinitions。在这两种情况下，以定义表达式语法的 形式`#{<表达式字符串>}`
+
+`#variableName`
+
+`@beanref`
 
 ## 语法
 
@@ -390,10 +418,20 @@ String helloWorldReversed = parser.parseExpression(
 ```
 ExpressionParser parser = new SpelExpressionParser();
 StandardEvaluationContext context = new StandardEvaluationContext();
+//
 context.setBeanResolver(new MyBeanResolver());
 
 // This will end up calling resolve(context,"foo") on MyBeanResolver during evaluation
 Object bean = parser.parseExpression("@foo").getValue(context);
+
+
+ExpressionParser parser = new SpelExpressionParser();
+StandardEvaluationContext context = new StandardEvaluationContext();
+context.setBeanResolver(new MyBeanResolver());
+
+// 要访问工厂bean本身，应改为在bean名称前添加一个&符号
+// This will end up calling resolve(context,"&foo") on MyBeanResolver during evaluation
+Object bean = parser.parseExpression("&foo").getValue(context);
 ```
 
 ### 集合投影

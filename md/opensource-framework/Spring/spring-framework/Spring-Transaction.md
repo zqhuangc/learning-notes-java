@@ -29,6 +29,10 @@ doBegin  开启事务
 
 
 
+本**类内调用**不触发事务代理
+
+
+
 >  PlatformTransactionManager   中的方法
 >
 > getTransaction    调用了 TransactionSynchronizationManager 类的 getResource()

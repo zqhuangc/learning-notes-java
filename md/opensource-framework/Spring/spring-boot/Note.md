@@ -6,6 +6,20 @@
 
 [官方例子（可能存在问题）](https://github.com/spring-projects/spring-boot/tree/2.1.x/spring-boot-samples)
 
+
+
+`SpringContextResourceAdapter`  javaee
+
+scope
+
+qualifier
+
+primary
+
+named
+
+importresource    propertysource
+
 **通过  Java 规范来看 Spring**
 
 springboot下有3种方式注册Filter（Servlet、Listener类似），FilterRegistrationBean、@WebFilter 和@Bean，@WebFilter我还没试过，另外这3种方式注册的Filter的优先级是：FilterRegistrationBean > @WebFilter > @Bean

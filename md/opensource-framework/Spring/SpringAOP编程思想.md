@@ -90,52 +90,52 @@ AOP 引入
 AOP 常见使用场景
 
 * 日志场景
-  • 诊断上下文，如：log4j 或 logback 中的 _x0008_MDC
-  • 辅助信息，如：方法执行时间
+  * 诊断上下文，如：log4j 或 logback 中的 _x0008_MDC
+  * 辅助信息，如：方法执行时间
 
 
 
 * 统计场景
-  • 方法调用次数
-  • 执行异常次数
-  • 数据抽样
-  • 数值累加
+  * 方法调用次数
+  * 执行异常次数
+  * 数据抽样
+  * 数值累加
 
 
 
 * 安防场景
-  • 熔断，如：Netflix Hystrix
-  • 限流和降级：如：Alibaba Sentinel
-  • 认证和授权，如：Spring Security
-  • 监控，如：JMX
+  * 熔断，如：Netflix Hystrix
+  * 限流和降级：如：Alibaba Sentinel
+  * 认证和授权，如：Spring Security
+  * 监控，如：JMX
 
 
 
 * 性能场景
-  • 缓存，如 Spring Cache
-  • 超时控制
+  * 缓存，如 Spring Cache
+  * 超时控制
 
 
 
 ### 06 AOP概念：Aspect、Join Point 和 Advice 等术语应该如何理解?
 
-• AOP 定义
-• AspectJ：Aspect-oriented programming is a way of modularizing crosscutting
-concerns much like object-oriented programming is a way of modularizing common
-concerns.
-• Spring：Aspect-oriented Programming (AOP) complements Object-oriented
-Programming (OOP) by providing another way of thinking about program structure.
-The key unit of modularity in OOP is the class, whereas in AOP the unit of modularity is
-the aspect. Aspects enable the modularization of concerns (such as transaction
-management) that cut across multiple types and objects.
+* AOP 定义
+  * AspectJ：Aspect-oriented programming is a way of modularizing crosscutting
+    concerns much like object-oriented programming is a way of modularizing common
+    concerns.
+  * Spring：Aspect-oriented Programming (AOP) complements Object-oriented
+    Programming (OOP) by providing another way of thinking about program structure.
+    The key unit of modularity in OOP is the class, whereas in AOP the unit of modularity is
+    the aspect. Aspects enable the modularization of concerns (such as transaction
+    management) that cut across multiple types and objects.
 
 
 
-• Aspect 概念
-• AspectJ：aspect are the unit of modularity for crosscutting concerns. They behave
-somewhat like Java classes, but may also include pointcuts, advice and inter-type
-declarations.
-• Spring：A modularization of a concern that cuts across multiple classes.
+* Aspect 概念
+  * AspectJ：aspect are the unit of modularity for crosscutting concerns. They behave
+    somewhat like Java classes, but may also include pointcuts, advice and inter-type
+    declarations.
+  * Spring：A modularization of a concern that cuts across multiple classes.
 
 
 
@@ -194,7 +194,7 @@ object.
 
 
 
-### 09 Java AOP 判断模式 (Predicate) ：如何筛选 Join Point?
+### 09 Java AOP 判断模式 (Predicate) ：如何筛选 Join Point?(Pointcut)
 
 • 判断来源
 • 类型（Class）
@@ -202,6 +202,10 @@ object.
 • 注解（Annotation）
 • 参数（Parameter）
 • 异常（Exception）
+
+
+
+pointcut
 
 
 
@@ -315,11 +319,25 @@ affect the Spring AOP API or the AOP Alliance API. Spring AOP remains backward-c
 
 
 
+> #### @AspectJ或Spring AOP的XML？
+>
+> 如果选择使用Spring AOP，则可以选择@AspectJ或XML样式。有各种折衷考虑。
+>
+> XML样式可能是现有Spring用户最熟悉的，并且得到了真正的POJO的支持。将AOP用作配置企业服务的工具时，XML可能是一个不错的选择（一个很好的测试是您是否将切入点表达式视为配置的一部分，而您可能希望独立更改）。使用XML样式，可以说从您的配置中可以更清楚地了解系统中存在哪些方面。
+>
+> XML样式有两个缺点。首先，它没有完全将要解决的需求的实现封装在一个地方。DRY原则说，系统中的任何知识都应该有单一，明确，权威的表示形式。当使用XML样式时，关于如何实现需求的知识会在配置文件中的后备bean类的声明和XML中分散。当您使用@AspectJ样式时，此信息将封装在一个模块中：方面。其次，与@AspectJ样式相比，XML样式在表达能力上有更多限制：仅支持“单例”方面实例化模型，并且无法组合以XML声明的命名切入点。例如，使用@AspectJ样式，您可以编写如下内容：
+
+
+
+
+
 ### 19 AspectJ 基础：Aspect、Join Points、Pointcuts 和 Advice 语法和特性
 
 
 
 ### 20 AspectJ 注解驱动：注解能完全替代 AspectJ 语言吗?
+
+
 
 
 
@@ -340,25 +358,115 @@ affect the Spring AOP API or the AOP Alliance API. Spring AOP remains backward-c
 
 
 
+
+
 ### 02 @AspectJ 注解驱动
 
-• 激活 @AspectJ 模块
-• 注解激活 - @EnableAspectJAutoProxy
-• XML 配置 - `<aop:aspectj-autoproxy/>`
-• 声明 Aspect
-• @Aspect
+* 激活 @AspectJ 模块
+  * 注解激活 - @EnableAspectJAutoProxy
+  * XML 配置 - `<aop:aspectj-autoproxy/>`
+* 声明 Aspect
+  * @Aspect
 
 
+
+https://www.eclipse.org/aspectj/
+
+> @AspectJ是一种将切面声明为带有注释的常规Java类的样式。@AspectJ样式是[AspectJ项目](https://www.eclipse.org/aspectj)在AspectJ 5版本中引入的 。Spring使用AspectJ提供的用于切入点解析和匹配的库来解释与AspectJ 5相同的注释。但是，AOP运行时仍然是纯Spring AOP，并且不依赖于AspectJ编译器或编织器。
+>
+>
+>
+> 启用@AspectJ支持后，`@Aspect`Spring会自动检测到在应用程序上下文中使用@AspectJ切面（具有注释）的类定义的任何bean，并用于配置Spring AOP。
+
+向其他切面提供建议（advice）？
+
+在Spring AOP中，切面本身不能成为其他切面的建议目标。
+
+@Aspect
+
+类上的注释将其标记为一个切面，因此将其从自动代理中排除。
+
+
+
+Spring AOP仅支持Spring Bean的方法执行连接点，因此您可以将切入点视为与Spring Bean上的方法执行相匹配。切入点声明由两部分组成：一个包含名称和任何参数的签名，以及一个切入点表达式，该切入点表达式准确确定我们感兴趣的方法执行。在AOP的@AspectJ批注样式中，常规方法定义提供了切入点签名。 ，并通过使用`@Pointcut`注释指示切入点表达式（用作切入点签名的方法必须具有`void`返回类型）。
+
+
+
+@Pointcut`注释值的切入点表达式是一个常规的AspectJ 5切入点表达式。有关AspectJ的切入点语言的完整讨论，请参见[AspectJ编程指南](https://www.eclipse.org/aspectj/doc/released/progguide/index.html)（以及扩展，包括 [AspectJ 5开发人员的笔记本](https://www.eclipse.org/aspectj/doc/released/adk15notebook/index.html)）或有关AspectJ的书籍之一（如Colyer等人的*Eclipse AspectJ*，或《*AspectJ in Action》*，由Ramnivas Laddad撰写）
+
+
+
+在本5.10节中，我们将研究如果您的需求超出了Spring AOP所提供的功能
+
+@Configurable
+
+AnnotationTransactionAspect
 
 ### 03 编程方式创建 @AspectJ 代理
 
-04 XML配置驱动 — 创建AOP代理
+
+
+```
+// create a factory that can generate a proxy for the given target object
+AspectJProxyFactory factory = new AspectJProxyFactory(targetObject);
+
+// add an aspect, the class must be an @AspectJ aspect
+// you can call this as many times as you need with different aspects
+factory.addAspect(SecurityManager.class);
+
+// you can also add existing aspect instances, the type of the object supplied must be an @AspectJ aspect
+factory.addAspect(usageTracker);
+
+// now get the proxy object...
+MyInterfaceType proxy = factory.getProxy();
+```
+
+
+
+### 04 XML配置驱动 — 创建AOP代理
+
+
+
+
 
 ### 05 标准代理工厂 API — ProxyFactory
 
+
+
+```
+ProxyFactory factory = new ProxyFactory(new SimplePojo());
+        factory.addInterface(Pojo.class);
+        factory.addAdvice(new RetryAdvice());
+        factory.setExposeProxy(true); // 暴露自身
+        Pojo pojo = (Pojo) factory.getProxy();
+        // this is a method call on the proxy!
+        pojo.foo();
+        
+        
+(Pojo) AopContext.currentProxy()
+```
+
+
+
+
+
 ### 06 @AspectJ Pointcut 指令与表达式：为什么 Spring 只能有限支持?
 
+##### 支持的切入点指示符
 
+https://docs.spring.io/spring-framework/docs/5.3.x/reference/html/core.html#aop-pointcuts
+
+Spring AOP支持以下在切入点表达式中使用的AspectJ切入点指示符（PCD）：
+
+- `execution`：用于匹配方法执行的连接点。这是使用Spring AOP时要使用的主要切入点指示符。
+- `within`：将匹配限制为某些类型内的连接点（使用Spring AOP时，在匹配类型内声明的方法的执行）。
+- `this`：将匹配限制为连接点（使用Spring AOP时方法的执行），其中bean引用（Spring AOP代理）是给定类型的实例。
+- `target`：在目标对象（代理的应用程序对象）是给定类型的实例的情况下，将匹配限制为连接点（使用Spring AOP时方法的执行）。
+- `args`：在参数为给定类型的实例的情况下，将匹配限制为连接点（使用Spring AOP时方法的执行）。
+- `@target`：在执行对象的类具有给定类型的注释的情况下，将匹配限制为连接点（使用Spring AOP时方法的执行）。
+- `@args`：限制匹配的连接点（使用Spring AOP时方法的执行），其中传递的实际参数的运行时类型具有给定类型的注释。
+- `@within`：将匹配限制为具有给定注释的类型内的连接点（使用Spring AOP时，使用给定注释的类型中声明的方法的执行）。
+- `@annotation`：将匹配点限制为连接点的主题（在Spring AOP中运行的方法）具有给定注释的连接点。
 
 ### 07 XML 配置 Pointcut
 
@@ -466,93 +574,141 @@ API 编程：如 Joinpoint、Pointcut、Advice 和 ProxyFactory 等
 
 
 
+> - `getArgs()`：返回方法参数。
+> - `getThis()`：返回代理对象。
+> - `getTarget()`：返回目标对象。
+> - `getSignature()`：返回建议使用的方法的描述。
+> - `toString()`：打印有关所建议方法的有用描述。
+>
+> 参数传递 args(...)
+
 ### 03 Joinpoint 条件接口 — Pointcut
 
-• 核心组件
-• 类过滤器 - ClassFilter
-• 方法匹配器 - MethodMatcher
+* 核心组件
+
+  * 类过滤器 - ClassFilter
+
+    ```
+    public interface ClassFilter {
+        boolean matches(Class clazz);
+    }
+    ```
+
+  * 方法匹配器 - MethodMatcher
+
+    ```
+    public interface MethodMatcher {
+        boolean matches(Method m, Class targetClass);
+        boolean isRuntime();
+        boolean matches(Method m, Class targetClass, Object[] args);
+    }
+    ```
+
 
 
 
 ### 04 Pointcut 操作 — ComposablePointcut
 
-• 组合实现 - org.springframework.aop.support.ComposablePointcut
-• 工具类
-• ClassFilter 工具类 - ClassFilters
-• MethodMatcher 工具类 - MethodMatchers
-• Pointcut 工具类 - Pointcuts
+* 组合实现 - org.springframework.aop.support.ComposablePointcut
+* 工具类
+  * ClassFilter 工具类 - ClassFilters
+  * MethodMatcher 工具类 - MethodMatchers
+  * Pointcut 工具类 - Pointcuts
 
 
 
 ### 05 Pointcut 便利实现
 
-• 静态 Pointcut - StaticMethodMatcherPointcut
-• 正则表达式 Pointcut - JdkRegexpMethodPointcut
-• 控制流 Pointcut - ControlFlowPointcut
+* 静态 Pointcut - StaticMethodMatcherPointcut
+* 正则表达式 Pointcut - JdkRegexpMethodPointcut
+  * RegexpMethodPointcutAdvisor
+* 控制流 Pointcut - ControlFlowPointcut
 
 
 
 ### 06 Pointcut AspectJ 实现 — AspectJExpressionPointcut
 
-• 实现类 - org.springframework.aop.aspectj.AspectJExpressionPointcut
-• 指令支持 - SUPPORTED_PRIMITIVES 字段
-• 表达式 - org.aspectj.weaver.tools.PointcutExpression
+* 实现类 - org.springframework.aop.aspectj.AspectJExpressionPointcut
+* 指令支持 - SUPPORTED_PRIMITIVES 字段
+* 表达式 - org.aspectj.weaver.tools.PointcutExpression
 
 
 
 ### 07 Join point 执行动作接口 — Advice
 
-• Around Advice - Interceptor
-• 方法拦截器 - MethodInterceptor
-• 构造器拦截器 - ConstructorInterceptor
-• 前置动作
-• 标准接口 - org.springframework.aop.BeforeAdvice
-• 方法级别 - org.springframework.aop.MethodBeforeAdvice
-• 后置动作
-• org.springframework.aop.AfterAdvice
-• org.springframework.aop.AfterReturningAdvice
-• org.springframework.aop.ThrowsAdvice
+* Around Advice - Interceptor
+  * 方法拦截器 - MethodInterceptor
+  * 构造器拦截器 - ConstructorInterceptor
+* 前置动作
+  * 标准接口 - org.springframework.aop.BeforeAdvice
+  * 方法级别 - org.springframework.aop.MethodBeforeAdvice
+* 后置动作
+  * org.springframework.aop.AfterAdvice
+  * org.springframework.aop.AfterReturningAdvice
+  * org.springframework.aop.ThrowsAdvice
 
+```
+public interface MethodInterceptor extends Interceptor {
+    Object invoke(MethodInvocation invocation) throws Throwable;
+}
+```
 
+`MethodInvocation`参数`invoke()`
 
 ### 08 Join point Before Advice 标准实现
 
-• 接口
-• 标准接口 - org.springframework.aop.BeforeAdvice
-• 方法级别 - org.springframework.aop.MethodBeforeAdvice
-• 实现
-• org.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor
+* 接口
+  * 标准接口 - org.springframework.aop.BeforeAdvice
+  * 方法级别 - org.springframework.aop.MethodBeforeAdvice
+* 实现
+  * org.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor
+
+```
+public interface MethodBeforeAdvice extends BeforeAdvice {
+    void before(Method m, Object[] args, Object target) throws Throwable;
+}
+```
 
 
 
 ### 09 Join point Before Advice AspectJ 实现
 
-• 实现类 - org.springframework.aop.aspectj.AspectJMethodBeforeAdvice
+* 实现类 - org.springframework.aop.aspectj.AspectJMethodBeforeAdvice
 
 
 
 ### 10 Join point After Advice 标准实现
 
-• 接口
-• org.springframework.aop.AfterAdvice
-• org.springframework.aop.AfterReturningAdvice
-• org.springframework.aop.ThrowsAdvice
-• 实现
-• org.springframework.aop.framework.adapter.ThrowsAdviceInterceptor
-• org.springframework.aop.framework.adapter.AfterReturningAdviceInterceptor
+* 接口
+  * org.springframework.aop.AfterAdvice
+  * org.springframework.aop.AfterReturningAdvice
+  * org.springframework.aop.ThrowsAdvice
+* 实现
+  * org.springframework.aop.framework.adapter.ThrowsAdviceInterceptor
+  * org.springframework.aop.framework.adapter.AfterReturningAdviceInterceptor
+
+
+
+```
+afterThrowing([Method, args, target], subclassOfThrowable)
+
+
+void afterReturning(Object returnValue, Method m, Object[] args, Object target)
+            throws Throwable;
+```
 
 
 
 ### 11 Join point After Advice AspectJ 实现
 
-• 接口
-• org.springframework.aop.AfterAdvice
-• org.springframework.aop.AfterReturningAdvice
-• org.springframework.aop.ThrowsAdvice
-• 实现
-• org.springframework.aop.aspectj.AspectJAfterAdvice
-• org.springframework.aop.aspectj.AspectJAfterReturningAdvice
-• org.springframework.aop.aspectj.AspectJAfterThrowingAdvice
+* 接口
+  • org.springframework.aop.AfterAdvice
+  • org.springframework.aop.AfterReturningAdvice
+  • org.springframework.aop.ThrowsAdvice
+* 实现
+  • org.springframework.aop.aspectj.AspectJAfterAdvice
+  • org.springframework.aop.aspectj.AspectJAfterReturningAdvice
+  • org.springframework.aop.aspectj.AspectJAfterThrowingAdvice
 
 
 
@@ -565,40 +721,73 @@ API 编程：如 Joinpoint、Pointcut、Advice 和 ProxyFactory 等
 
 ### 13 Pointcut 与 Advice 连接器 — PointcutAdvisor
 
-• 接口 - org.springframework.aop.PointcutAdvisor
-• 通用实现
-• org.springframework.aop.support.DefaultPointcutAdvisor
-• AspectJ 实现
-• org.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor
-• org.springframework.aop.aspectj.AspectJPointcutAdvisor
-• 静态方法实现
-• org.springframework.aop.support.StaticMethodMatcherPointcutAdvisor
-• IoC 容器实现
-• org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor
+* 接口 - org.springframework.aop.PointcutAdvisor
+  * 通用实现
+    * org.springframework.aop.support.DefaultPointcutAdvisor
+  * AspectJ 实现
+    * org.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor
+    * org.springframework.aop.aspectj.AspectJPointcutAdvisor
+  * 静态方法实现
+    * org.springframework.aop.support.StaticMethodMatcherPointcutAdvisor
+  * IoC 容器实现
+    * org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor
 
 
 
 ### 14 Introduction 与 Advice 连接器 — IntroductionAdvisor
 
-• 接口 - org.springframework.aop.IntroductionAdvisor
-• 元信息
-• org.springframework.aop.IntroductionInfo
-• 通用实现
-• org.springframework.aop.support.DefaultIntroductionAdvisor
-• AspectJ 实现
-• org.springframework.aop.aspectj.DeclareParentsAdvisor
+* 接口 - org.springframework.aop.IntroductionAdvisor8
+
+  * 元信息
+    * org.springframework.aop.IntroductionInfo
+
+  * 通用实现
+    * org.springframework.aop.support.DefaultIntroductionAdvisor
+
+  * AspectJ 实现
+    * org.springframework.aop.aspectj.DeclareParentsAdvisor
+
+
+
+```
+5.4.5节
+@DeclareParents
+
+@DeclareParents(value="com.xzy.myapp.service.*+",defaultImpl=DefaultUsageTracked.class)
+
+
+您可以使用@DeclareParents注释进行介绍。此批注用于声明匹配类型具有新的父代（因此具有名称）。例如，给定名为的接口UsageTracked和名为的接口的实现 DefaultUsageTracked，以下方面声明服务接口的所有实现者也都实现该UsageTracked接口（例如，通过JMX进行统计）：
+
+
+public interface IntroductionInterceptor extends MethodInterceptor {
+
+    boolean implementsInterface(Class intf);
+}
+
+public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
+
+    ClassFilter getClassFilter();
+
+    void validateInterfaces() throws IllegalArgumentException;
+}
+
+public interface IntroductionInfo {
+
+    Class<?>[] getInterfaces();
+}
+```
 
 
 
 ### 15 Advisor 的 Interceptor 适配器 — AdvisorAdapter
 
-• 接口 - org.springframework.aop.framework.adapter.AdvisorAdapter
-• MethodBeforeAdvice 实现
-• org.springframework.aop.framework.adapter.MethodBeforeAdviceAdapter
-• AfterReturningAdvice 实现
-• org.springframework.aop.framework.adapter.AfterReturningAdviceAdapter
-• ThrowsAdvice 实现
-• org.springframework.aop.framework.adapter.ThrowsAdviceAdapter
+* 接口 - org.springframework.aop.framework.adapter.AdvisorAdapter
+  * MethodBeforeAdvice 实现
+    • org.springframework.aop.framework.adapter.MethodBeforeAdviceAdapter
+  * AfterReturningAdvice 实现
+    • org.springframework.aop.framework.adapter.AfterReturningAdviceAdapter
+  * ThrowsAdvice 实现
+    • org.springframework.aop.framework.adapter.ThrowsAdviceAdapter
 
 
 
@@ -654,11 +843,54 @@ API 编程：如 Joinpoint、Pointcut、Advice 和 ProxyFactory 等
 
 ### 21 AopProxyFactory 配置管理器 — AdvisedSupport
 
-• 核心 API - org.springframework.aop.framework.AdvisedSupport
-• 语义 - 代理配置
-• 基类 - org.springframework.aop.framework.ProxyConfig
-• 实现接口 - org.springframework.aop.framework.Advised
-• 使用场景 - org.springframework.aop.framework.AopProxy 实现
+*  核心 API - org.springframework.aop.framework.AdvisedSupport
+  • 语义 - 代理配置
+  • 基类 - org.springframework.aop.framework.ProxyConfig
+  • 实现接口 - org.springframework.aop.framework.Advised
+  • 使用场景 - org.springframework.aop.framework.AopProxy 实现
+
+
+
+```
+无论创建AOP代理，都可以通过使用org.springframework.aop.framework.Advised接口来操作它们 。任何AOP代理都可以强制转换为该接口，无论它实现了哪个其他接口
+
+Advisor[] getAdvisors();
+
+void addAdvice(Advice advice) throws AopConfigException;
+
+void addAdvice(int pos, Advice advice) throws AopConfigException;
+
+void addAdvisor(Advisor advisor) throws AopConfigException;
+
+void addAdvisor(int pos, Advisor advisor) throws AopConfigException;
+
+int indexOf(Advisor advisor);
+
+boolean removeAdvisor(Advisor advisor) throws AopConfigException;
+
+void removeAdvisor(int index) throws AopConfigException;
+
+boolean replaceAdvisor(Advisor a, Advisor b) throws AopConfigException;
+
+boolean isFrozen();
+
+
+
+Advised advised = (Advised) myObject;
+Advisor[] advisors = advised.getAdvisors();
+int oldAdvisorCount = advisors.length;
+System.out.println(oldAdvisorCount + " advisors");
+
+// Add an advice like an interceptor without a pointcut
+// Will match all proxied methods
+// Can use for interceptors, before, after returning or throws advice
+advised.addAdvice(new DebugInterceptor());
+
+// Add selective advice using a pointcut
+advised.addAdvisor(new DefaultPointcutAdvisor(mySpecialPointcut, myAdvice));
+
+assertEquals("Added two advisors", oldAdvisorCount + 2, advised.getAdvisors().length);
+```
 
 
 
@@ -673,13 +905,28 @@ org.springframework.aop.framework.InterceptorAndDynamicMethodMatcher
 
 ### 23 目标对象来源接口与实现 — TargetSource
 
-• 核心 API - org.springframework.aop.TargetSource
-• 实现
-• org.springframework.aop.target.HotSwappableTargetSource
-• org.springframework.aop.target.AbstractPoolingTargetSource
-• org.springframework.aop.target.PrototypeTargetSource
-• org.springframework.aop.target.ThreadLocalTargetSource
-• org.springframework.aop.target.SingletonTargetSource
+* 核心 API - org.springframework.aop.TargetSource
+
+* 实现
+
+  * org.springframework.aop.target.HotSwappableTargetSource
+
+    * 一个AOP代理的目标进行切换，同时让调用者保持自己对它的引用。更改目标源的目标会立即生效。
+
+    * ```
+      HotSwappableTargetSource swapper = (HotSwappableTargetSource) beanFactory.getBean("swapper");
+      Object oldTarget = swapper.swap(newTarget);
+      ```
+
+  * org.springframework.aop.target.AbstractPoolingTargetSource
+
+  * org.springframework.aop.target.PrototypeTargetSource
+
+    * 每次方法调用都会创建目标的新实例
+
+  * org.springframework.aop.target.ThreadLocalTargetSource
+
+  * org.springframework.aop.target.SingletonTargetSource
 
 
 
@@ -703,25 +950,27 @@ org.springframework.aop.framework.InterceptorAndDynamicMethodMatcher
 
 ### 26 ProxyCreatorSupport 标准实现 — ProxyFactory
 
-• 核心 API - org.springframework.aop.framework.ProxyFactory
-• 基类 - org.springframework.aop.framework.ProxyCreatorSupport
-• 特性增强
-• 提供一些便利操作
+* 核心 API - org.springframework.aop.framework.ProxyFactory
+  • 基类 - org.springframework.aop.framework.ProxyCreatorSupport
+  • 特性增强
+  • 提供一些便利操作
 
 
 
 ### 27 ProxyCreatorSupport loC 容器实现 — ProxyFactoryBean
 
-• 核心 API - org.springframework.aop.framework.ProxyFactoryBean
-• 基类 - org.springframework.aop.framework.ProxyCreatorSupport
-• 特点
-• Spring IoC 容器整合
-• org.springframework.beans.factory.BeanClassLoaderAware
-• org.springframework.beans.factory.BeanFactoryAware
-• 特性增强
-• 实现 org.springframework.beans.factory.FactoryBean
+* 核心 API - org.springframework.aop.framework.ProxyFactoryBean
+* 基类 - org.springframework.aop.framework.ProxyCreatorSupport
+* 特点
+  * Spring IoC 容器整合
+    • org.springframework.beans.factory.BeanClassLoaderAware
+    • org.springframework.beans.factory.BeanFactoryAware
+* 特性增强
+  * 实现 org.springframework.beans.factory.FactoryBean
 
 
+
+TransactionProxyFactoryBean
 
 ### 28 ProxyCreatorSupport AspectJ 实现 — AspectJ Proxy Factory
 
@@ -931,449 +1180,7 @@ org.springframework.context.annotation.AspectJAutoProxyRegistrar
 
  
 
-   小马哥讲Spring AOP   
-
-   编程思想   
-
-   课程大纲   
-
-   第一章：Spring AOP总览   
-
-   课程介绍   
-
-   01   
-
-   02内容综述   
-
-   03知识储备：基础、基础，   04AOP引入：OOP存在哪些局限性?   05AOP常见使用场景   
-
-   还是基础!   
-
-   AOP概念：Aspect、Join Point和Advice等术语应该   如何理解?   
-
-   06   
-
-   07 Java AOP设计模式：代理、判断和拦截器模式   
-
-   Java AOP代理模式   
-
-   (Proxy) ：Java 静态代理和动态代   
-
-   08   
-
-   理的区别是什么?   
-
-   09 Java AOP判断模式   
-
-   (Predicate)   ：如何筛选Join Point?   (Interceptor)   ：拦截执行分别代   
-
-   Java AOP拦截器模式   
-
-   10   
-
-   表什么?   
-
-   11 Spring AOP功能概述：核心特性、编程模型和使用限制   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   Spring AOP编程模型：注解驱动、XML配置驱动和底   
-
-   12   13   14   
-
-   层API   
-
-   Spring AOP设计目标：Spring AOP   
-
-   与AOP框架之间   
-
-   的关系是竞争还是互补?   
-
-   Spring AOP Advice类型：Spring AOP丰富了哪些   
-
-   AOP Advice呢?   
-
-   15 Spring AOP代理实现：为什么SpringFramework选   
-
-   择三种不同AOP实现?   
-
-   JDK动态代理：为什么Proxy.new Proxy   Instance   
-
-   会生   
-
-   16   
-
-   成新的字节码?   
-
-   17 C GLIB动态代理：为什么Java动态代理无法满足   AOP的需要?   
-
-   AspectJ代理代理：为什么Spring推荐AspectJ注解?   
-
-   18   
-
-   19 AspectJ基础：Aspect、Join Points、Pointcuts和   Advice语法和特性   
-
-   20 AspectJ注解驱动：   21 面试题精选   
-
-   注解能完全替代AspectJ语言吗?   
-
-   第二章：Spring AOP   
-
-   基础   
-
-   Spring核心基础：《小马哥讲Spring核心编程思想》还   
-
-   记得多少?   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   @AspectJ注解驱动   
-
-   2   
-
-   编程方式创建@AspectJ代理   XML配置驱动-创建AOP代理   
-
-   3   4   5   6   
-
-   标准代理工厂 API-Proxy   Factory   
-
-   指令与表达式：为什么Spring只   
-
-   @AspectJ   Pointcut   能有限支持?   
-
-   7 XML配置Pointcut   API实现Pointcut   
-
-   8   
-
-   @AspectJ拦截动作：@Around   XML配置Around Advice   
-
-   与 @Pointcut有区别吗?   
-
-   9   
-
-   10   11   12   
-
-   API实现Around Advice   
-
-   @AspectJ前置动作：   执行?   
-
-   @Before与   
-
-   @Around谁优先级   
-
-   XML配置Before Advice   
-
-   13   
-
- 
-
-
-
-
-
-
-   API实现Before Advice   
-
-   14   
-
-   15 @AspectJ后置动作-   
-
-   -三种After Advice之间的关系?   
-
-   XML配置三种After Advice   API实现三种After Advice   自动动态代理   
-
-   16   17   18   19   
-
-   替换Target Source   
-
-   面试题精选   
-
-   20   
-
-   第三章：Spring AOP API设计与实现   
-
-   Spring AOP API整体设计   
-
-   01   
-
-   02接入点接口-Join point   
-
-   03 Join point条件接口-Pointcut   
-
-   04 Pointcut操作   
-
-   Composable Pointcut   
-
-   05 Pointcut便利实现   06 Pointcut AspectJ   
-
-   实现-AspectJ Expression Pointcut   
-
-   07 Join point执行动作接口-Advice   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   08 Join point Before Advice标准实现   09 Join point Before Advice AspectJ实现   Join point After Advice标准实现   
-
-   10   11   12   13   14   
-
-   Join point After Advice AspectJ实现   Advice容器接口-Advisor   
-
-   Pointcut与Advice连接器-Pointcut Advisor   
-
-   Introduction   
-
-   Advice连接器-Introduction Advisor   
-
-   与   
-
-   Advisor的Interceptor适配器-Advisor Adapter   
-
-   15   16   
-
-   Advisor Adapter实现   
-
-   17 AOP代理接口-Aop Proxy   
-
-   18 Aop Proxy工厂接口与实现   
-
-   19   
-
-   JDK Aop Proxy实现-Jdk Dynamic Aop Proxy   
-
-   20CGLIBAop Proxy实现-C glib Aop Proxy   
-
-   配置管理器-Advised Support   
-
-   21Aop Proxy Factory   
-
-   22 Advisor链工厂接口与实现-Advisor Chain Factory   
-
-   目标对象来源接口与实现-Target Source   
-
-   23   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   24代理对象创建基础类-Proxy Creator Support   
-
-   25 Advised Support事件监听器-Advised Support   Listener   26 Proxy Creator Support标准实现-Proxy Factory   27 Proxy Creator Support loC容器实现-Proxy Factory Bean   
-
-   28 Proxy Creator Support AspectJ实现-   AspectJ Proxy Factory   
-
-   29loC容器自动代理抽象-Abstract Auto Proxy Creator   30loC容器自动代理标准实现   
-
-   loC容器自动代理AspectJ实现-   
-
-   31   
-
-   AspectJ Aware Advisor Auto Proxy Creator   
-
-   32AOP Infrastructure Bean接口-A opl   nfrastructure Bean   33AOP上下文辅助类-Aop Context   
-
-   34 代理工厂工具类-Aop Proxy Utils   35AOP工具类-Aop Utils   
-
- 
-
-
-
-
-
-
-   AspectJ Enable模块驱动实现   
-
-   36   37   
-
-   一   
-
-   @Enable AspectJ Auto Proxy   
-
-   AspectJ XML配置驱动实现-   
-
-   <aop：aspectj-autoproxy/>   
-
-   38AOP配置Schema-based实现   39 Aspect Schema-based   
-
-   -<aop：config/>   
-
-   实现-<aop：aspect/>   
-
-   40 Pointcut Schema-based实现-<aop：pointcut/>   
-
-   41   
-
-   Around Advice Schema-based实现-<aop：around/>   
-
-   42 Before Advice Schema-based实现-<aop：before/>   
-
-   43 After Advice Schema-based实现-<aop：after/>   
-
-   Introduction Schema-based实现-   
-
-   45   
-
-   <aop：declare-parents/>   
-
-   44 作用域代理Schema-based实现-   
-
-   <aop：scoped-proxy/>   
-
-   45AOP配置Schema-based实现-<aop：config/>   46面试题精选   
-
-   第四章：Spring AOP设计模式   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   02 构建器模式   03工厂方法模式   
-
-   (Builder) 实现   (Factory method)   
-
-   实现   
-
-   04 原型模式 (Prototype) 实现   
-
-   05单例模式   
-
-   (Singleton)   (Adapter)   
-
-   实现   
-
-   06   
-
-   适配器模式   
-
-   实现   实现   
-
-   07组合模式   
-
-   (Composite)   
-
-   08装饰器模式   09享元模式   
-
-   (Decorator)   (Flyweight)   
-
-   实现   
-
-   实现   
-
-   10 代理模式 (Proxy) 实现   
-
-   11 模板方法模式   12 责任链模式   13 观察者模式   
-
-   (Template Method)   
-
-   实现   
-
-   (Chain of Responsibility)   
-
-   实现   
-
-   (Observer)   
-
-   实现   
-
-   策略模式   命令模式   
-
-   (Strategy) 实现   
-
-   14   15   16   
-
-   (Command)   
-
-   实现   
-
-   状态模式 (State) 实现   
-
- 
-
- 
-
-
-
-
-
-
-
-
-   面试题精选   
-
-   17   
-
-   第五章：   
-
-   Spring AOP在SpringFramework内部应用   
-
-   01SpringAOP在Spring事件   
-
-   (Events)   
-
-   02SpringAOP在Spring事务   03SpringAOP在Spring数据   04SpringAOP在Spring缓存抽象   05SpringAOP在Spring本地调度   06SpringAOP在Spring整合   Spring AOP在Spring远程调用   
-
-   (Transactions)   
-
-   (Data)   
-
-   (Caching Abstract)   
-
-   (Scheduling)   
-
-   (Integration)   
-
-   (Remoting)   
-
-   07   
-
-   08面试题精选   
-
-   结束语   
-
-   09   
-
- 
+  
 
  
 
