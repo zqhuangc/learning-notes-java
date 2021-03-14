@@ -8,7 +8,9 @@ MyISAM和InnoDB存储引擎使用的锁：
 MyISAM采用表级锁(table-level locking)。
 InnoDB支持行级锁(row-level locking)和表级锁,默认为行级锁
 
+锁兼容（Lock Compatible）
 
+自增长与锁   auto-increment counter
 
 SESSION
 
@@ -23,13 +25,17 @@ LOCK、UNLOCK
 
 * 共享锁（s） 
 
+允许事务读一行数据
+
 共享锁（Share Locks，简记为S）又被称为读锁，其他用户可以并发读取数据，但任何事务都不能获取数据上的排他锁，直到已释放所有共享锁。
 
 共享锁(S锁)又称为读锁，若事务T对数据对象A加上S锁，则事务T只能读A；其他事务只能再对A加S锁，而不能加X锁，直到T释放A上的S锁。这就保证了其他事务可以读A，但在T释放A上的S锁之前不能对A做任何修改。
 
 加锁方式：...... LOCK IN SHARE MODE
 
-* 排他锁（X）：
+* 排他锁（X）
+
+允许事务删除或更新一行数据
 
 排它锁（(Exclusive lock,简记为X锁)）又称为写锁，若事务T对数据对象A加上X锁，则只允许T读取和修改A，其它任何事务都不能再对A加任何类型的锁，直到T释放A上的锁。它防止任何其它事务获取资源上的锁，直到在事务的末尾将资源上的原始锁释放为止。在更新操作(INSERT、UPDATE 或 DELETE)过程中始终应用排它锁。
 
@@ -50,8 +56,16 @@ LOCK、UNLOCK
 
 **InnoDB另外的两个表级锁：**
 
-- **意向共享锁（IS）：** 表示事务准备给数据行记入共享锁，事务在一个数据行加共享锁前必须先取得该表的IS锁。
-- **意向排他锁（IX）：** 表示事务准备给数据行加入排他锁，事务在一个数据行加排他锁前必须先取得该表的IX锁
+- **意向共享锁（IS）：** 表示事务准备给数据行记入共享锁，事务在一个数据行加共享锁前必须先取得该表的IS锁。事务想要获得一张表中某几行的共享锁
+- **意向排他锁（IX）：** 表示事务准备给数据行加入排他锁，事务在一个数据行加排他锁前必须先取得该表的IX锁。事务想要获得一张表中某几行的排它锁
+
+不同锁的兼容性
+
+
+
+
+
+
 
 ### 锁与索引
 
@@ -65,22 +79,33 @@ LOCK、UNLOCK
 2. 为什么通过唯一索引锁住一行数据，通过主键索引也不能加锁？
    索引存储结构--
    辅助索引  主键的ID
-3. 
+
+
 
 ## 锁的算法
 
 
 InnoDB存储引擎的**锁的算法**有三种：
 
-* Record lock：单个行记录上的锁
-* Gap lock：间隙锁，锁定一个范围，不包括记录本身（临界点）
+* Record lock：单个行记录上的锁，锁定索引记录（READ COMMITED）
+* Gap lock：间隙锁，锁定一个范围，不包括记录本身（临界点）( READ REPEATABLE)
 * Next-key lock：record+gap 锁定一个范围，包含记录本身（临界点），记录不存在时降级为间隙锁
 
 根据查询的范围，区间的划分
 
 相关知识点：
 innodb对于行的查询使用next-key lock
-Next-locking keying为了解决Phantom Problem幻读问题
-当查询的索引含有唯一属性时，将next-key lock降级为record key
+Next-locking keying 为了解决 Phantom Problem 幻读问题
+当查询的索引含有唯一属性时，将 next-key lock 降级为 record key
 Gap锁设计的目的是为了阻止多个事务将记录插入到同一范围内，而这会导致幻读问题的产生  
 有两种方式显式关闭gap锁：（除了外键约束和唯一性检查外，其余情况仅使用record lock） A. 将事务隔离级别设置为RC B. 将参数innodb_locks_unsafe_for_binlog设置为1
+
+
+
+### 锁问题
+
+脏读
+
+不可重复读
+
+丢失更新     解决：串行化 ，select 。。。FOR UPDATE
